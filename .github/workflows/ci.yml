@@ -24,6 +24,7 @@ jobs:
 
     - name: Build project
       run: |
+        mkdir -p linux
         cd linux
         if [ "${{ matrix.arch }}" == "generic" ]; then
           make clean all
