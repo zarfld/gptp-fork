@@ -57,11 +57,11 @@ The workflow file is located in the `.github/workflows` directory.
 
 ### Linux CI Pipeline
 
-The pipeline installs `cmake`, `doxygen`, and `graphviz`, and runs the build commands.
+The pipeline installs `cmake`, `doxygen`, and `graphviz`, and runs the build commands. The workflow file now uses `lukka/get-cmake@latest` instead of `lukka/get-cmake@v3`.
 
 ### Windows CI Pipeline
 
-The pipeline installs WinPCAP, CMAKE, Visual Studio, sets the `WPCAP_DIR` environment variable, and runs the build commands.
+The pipeline installs WinPCAP, CMAKE, Visual Studio, sets the `WPCAP_DIR` environment variable, and runs the build commands. The workflow file now uses `lukka/get-cmake@latest` instead of `lukka/get-cmake@v3`.
 
 ## Cloning GitHub Issues
 
