@@ -1,2 +1,1 @@
-# gptp-fork
-A repository for the gptp daemon with CI pipeline
+This repository is empty. Any task executed on it should be considered a new capability and needs to be created.
