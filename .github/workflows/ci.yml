@@ -1,0 +1,62 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        arch: [I210, generic, IntelCE]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up CMake
+      uses: lukka/get-cmake@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake doxygen graphviz
+
+    - name: Build project
+      run: |
+        cd linux
+        if [ "${{ matrix.arch }}" == "generic" ]; then
+          make clean all
+        else
+          ARCH=${{ matrix.arch }} make clean all
+        fi
+
+  build-windows:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        arch: [x64, x86]
+
+    env:
+      WPCAP_DIR: ${{ secrets.WPCAP_DIR }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up CMake
+      uses: lukka/get-cmake@v3
+
+    - name: Install dependencies
+      run: |
+        choco install cmake --version=3.2.2
+        choco install visualstudio2013community
+        choco install winpcap
+
+    - name: Build project
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        msbuild /p:Configuration=Release
