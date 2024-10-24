@@ -69,4 +69,4 @@ A script has been added to clone GitHub issues from the original repository to t
 
 ## Syncing with the Original Repository
 
-A GitHub Actions workflow has been created to automate syncing the forked repository with the original repository. The workflow runs at regular intervals to pull changes from the original repository and push them to the forked repository. The workflow uses the `actions/checkout` action to pull changes from the original repository and ensures that the forked repository remains consistent with the original repository.
+A GitHub Actions workflow has been created to automate syncing the forked repository with the original repository. The workflow runs at regular intervals to pull changes from the original repository and push them to the forked repository. The workflow uses the `actions/checkout` action to pull changes from the original repository and ensures that the forked repository remains consistent with the original repository. The workflow now uses `git pull upstream main` instead of `git merge upstream/main` to pull and merge changes from the `upstream/main` branch into the `main` branch.
