@@ -32,6 +32,11 @@ jobs:
           ARCH=${{ matrix.arch }} make clean all
         fi
 
+    - name: Build with IP Helper API
+      run: |
+        cd linux
+        make build-with-iphlpapi
+
     - name: Run static code analysis
       run: |
         cd linux
@@ -98,3 +103,9 @@ jobs:
       run: |
         w32tm /query /status
         w32tm /query /configuration
+
+    - name: Integrate Intel hardware timestamping
+      run: |
+        cd src
+        cl /EHsc timestamping.cpp
+        timestamping.exe
