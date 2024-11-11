@@ -60,6 +60,105 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 
 To execute the daemon, run `daemon_cl.exe xx-xx-xx-xx-xx-xx`, replacing `xx-xx-xx-xx-xx-xx` with the MAC address of the local interface.
 
+## Using IP Helper API for gPTP and Timestamping
+
+The Windows IP Helper API (Iphlpapi) functions provide an extensive list of functions related to network configuration, management, and diagnostics. Here’s an overview of key areas relevant to implementing or extending gPTP or timestamping functionalities:
+
+### Key Function Categories in IP Helper API
+
+1. **Network Configuration and Interface Management**
+
+   * `GetAdaptersInfo` and `GetIfTable`: Useful for retrieving information about network adapters. You could use these functions to detect and configure the Intel i210 or i226 network interfaces when setting up gPTP or timestamping.
+   * `SetIfEntry`: Allows modifications to network interface settings, which can be useful for configuring network properties that affect timing or synchronization.
+
+2. **Address Resolution and Routing**
+
+   * `GetIpAddrTable` and `GetIpNetTable`: These functions allow access to IP addresses and ARP table entries, which could be helpful if your implementation requires knowledge of network topology or peer device addresses in the gPTP setup.
+   * `GetBestRoute`: Can be used to determine optimal routing for PTP messages to minimize network delay.
+
+3. **Network Statistics and Diagnostic Data**
+
+   * `GetIfEntry` and `GetIfTable2`: Useful for monitoring interface statistics, which can help in diagnostics or logging for gPTP performance evaluation.
+   * `GetPerTcpConnectionEStats`: Provides extended statistics for TCP connections, which might help with understanding network delays or traffic issues, though it is less directly related to PTP/gPTP.
+
+4. **Packet Timestamping and Protocol Control**
+
+   * `GetTcpStatistics` and `GetUdpStatistics`: These provide insights into TCP/UDP traffic, which can indirectly support gPTP operations by allowing you to monitor the network's load and performance.
+   * `GetAdaptersAddresses`: A more advanced version of `GetAdaptersInfo`, which includes additional options for accessing timestamping capabilities when supported by the network adapter.
+
+5. **Advanced IP and Network Functions**
+
+   * `ConvertInterfaceIndexToLuid` and `ConvertInterfaceLuidToIndex`: These functions are useful when handling multiple network adapters, especially if you need to map between logical and physical interface identifiers.
+   * `NotifyAddrChange`: Can be used to monitor network changes and handle re-synchronization if an interface is reconfigured or disrupted.
+
+### Using IP Helper API with gPTP and Timestamping
+
+While the IP Helper API itself does not implement gPTP, it provides necessary functions for managing network interfaces and retrieving adapter configurations, which can complement a gPTP driver or application. You might use it to:
+
+* Set up and monitor network interfaces
+* Retrieve hardware details and capabilities for specific NICs (such as Intel i210 and i226)
+* Monitor network traffic and statistics to optimize time synchronization
+
+### Key Considerations
+
+For gPTP on Windows, the IP Helper API alone will not provide complete support. You would typically use IP Helper for network management while relying on custom drivers or other APIs (e.g., NDIS or PTP API) to handle the precise timestamping and synchronization aspects required by gPTP.
+
+### Necessary Headers and Libraries
+
+To use the IP Helper API, include the following headers in your code:
+
+```c
+#include <Iphlpapi.h>
+#include <Windows.h>
+```
+
+Link against the `Iphlpapi.lib` library.
+
+### Example: Using `GetAdaptersInfo` to Retrieve Network Adapter Information
+
+Here is a brief example of how to use `GetAdaptersInfo` to retrieve information about network adapters, including the Intel i210:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <Iphlpapi.h>
+#include <Windows.h>
+
+#pragma comment(lib, "Iphlpapi.lib")
+
+int main() {
+    DWORD dwSize = 0;
+    DWORD dwRetVal = 0;
+    IP_ADAPTER_INFO *pAdapterInfo = NULL;
+    IP_ADAPTER_INFO *pAdapter = NULL;
+
+    // First call to GetAdaptersInfo to get the size needed
+    if (GetAdaptersInfo(pAdapterInfo, &dwSize) == ERROR_BUFFER_OVERFLOW) {
+        pAdapterInfo = (IP_ADAPTER_INFO *)malloc(dwSize);
+    }
+
+    // Second call to GetAdaptersInfo to get the actual data
+    if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &dwSize)) == NO_ERROR) {
+        pAdapter = pAdapterInfo;
+        while (pAdapter) {
+            printf("Adapter Name: %s\n", pAdapter->AdapterName);
+            printf("Adapter Desc: %s\n", pAdapter->Description);
+            if (strstr(pAdapter->Description, "Intel(R) Ethernet Connection I210")) {
+                printf("Found Intel i210 adapter!\n");
+                // Access and configure the Intel i210 adapter as needed
+            }
+            pAdapter = pAdapter->Next;
+        }
+    }
+
+    if (pAdapterInfo) {
+        free(pAdapterInfo);
+    }
+
+    return 0;
+}
+```
+
 ## GitHub Actions CI Pipeline
 
 A GitHub Actions CI pipeline has been added to compile the code for both Linux and Windows platforms. The CI pipeline sets up the environment, installs dependencies, and runs the build commands for both platforms.

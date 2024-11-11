@@ -13,6 +13,11 @@ build:
 	mkdir -p build
 	cd build && cmake .. && make
 
+build-with-iphlpapi:
+	@echo "Building with IP Helper API for $(ARCH)..."
+	mkdir -p build
+	cd build && cmake -DIPHLAPI=ON .. && make
+
 static-analysis:
 	@echo "Running static code analysis..."
 	cppcheck --enable=all --inconclusive --quiet .
@@ -22,4 +27,4 @@ resource-checks:
 	@echo "Running resource management checks..."
 	valgrind --leak-check=full ./daemon_cl
 
-.PHONY: clean build static-analysis resource-checks
+.PHONY: clean build build-with-iphlpapi static-analysis resource-checks
