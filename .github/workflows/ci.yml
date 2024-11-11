@@ -109,3 +109,9 @@ jobs:
         cd src
         cl /EHsc timestamping.cpp
         timestamping.exe
+
+    - name: Build and run IntegrateIntelHardwareTimestampingWithPacketTimestamping function
+      run: |
+        cd src
+        cl /EHsc timestamping.cpp
+        timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping

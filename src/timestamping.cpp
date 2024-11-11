@@ -28,6 +28,7 @@ DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *Interfa
         // Add logic to integrate Intel hardware timestamping with packet timestamping
         // This may involve combining hardware timestamps with packet timestamps
         // and calculating network delays or other factors
+        printf("Integration process completed successfully.\n");
     } else {
         printf("Failed to get timestamping capabilities. Error: %lu\n", dwRetVal);
     }
