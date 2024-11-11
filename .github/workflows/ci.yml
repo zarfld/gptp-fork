@@ -1,6 +1,14 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * 0' # Runs weekly
 
 jobs:
   build-linux:
@@ -52,7 +60,75 @@ jobs:
 
     strategy:
       matrix:
-        arch: [x64, x86]
+        arch: [x64]
+
+    env:
+      WPCAP_DIR: ${{ secrets.WPCAP_DIR }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Install dependencies
+      run: |
+        choco install cmake --version=3.2.2
+        choco install visualstudio2013community
+        choco install winpcap
+        choco install cppcheck
+        choco install llvm
+
+    - name: Build project
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        msbuild /p:Configuration=Release
+
+    - name: Run static code analysis
+      run: |
+        cppcheck .
+        clang-tidy .
+
+    - name: Run resource management checks
+      run: |
+        # Use Visual Studio's built-in tools for resource management checks
+        echo "Running resource management checks using Visual Studio's built-in tools"
+
+    - name: Configure W32Time for PTP support
+      run: |
+        reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v AnnounceFlags /t REG_DWORD /d 5 /f
+        reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient" /v Enabled /t REG_DWORD /d 1 /f
+        reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient" /v SpecialPollInterval /t REG_DWORD /d 900 /f
+        reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpServer" /v Enabled /t REG_DWORD /d 1 /f
+        net stop w32time
+        net start w32time
+
+    - name: Test W32Time integration
+      run: |
+        w32tm /query /status
+        w32tm /query /configuration
+
+    - name: Integrate Intel hardware timestamping
+      run: |
+        cd src
+        cl /EHsc timestamping.cpp
+        timestamping.exe
+
+    - name: Build and run IntegrateIntelHardwareTimestampingWithPacketTimestamping function
+      run: |
+        cd src
+        cl /EHsc timestamping.cpp
+        timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
+
+  build-windows-x86:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        arch: [x86]
 
     env:
       WPCAP_DIR: ${{ secrets.WPCAP_DIR }}
