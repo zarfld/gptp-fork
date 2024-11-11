@@ -159,6 +159,66 @@ int main() {
 }
 ```
 
+## Using `GetInterfaceActiveTimestampCapabilities` for Timestamping
+
+The `GetInterfaceActiveTimestampCapabilities` function in the Windows IP Helper API checks if a network interface supports hardware timestamping, which is essential for applications like PTP or gPTP that require precise time synchronization.
+
+### Key Points of `GetInterfaceActiveTimestampCapabilities`
+
+1. **Function Purpose**: This function allows you to retrieve active timestamping capabilities for a specific network interface, identifying whether the hardware supports features like precise packet timestamping.
+
+2. **Usage**: The function takes the `NET_LUID` (Locally Unique Identifier) or `InterfaceIndex` of a network adapter and fills a `MIB_INTERFACE_TIMESTAMP_CAPABILITIES` structure, which includes details on whether timestamping is supported and if both send and receive timestamps are available.
+
+3. **Important Parameters**:
+   * `NET_LUID` or `InterfaceIndex`: Uniquely identifies the network adapter you are querying.
+   * `MIB_INTERFACE_TIMESTAMP_CAPABILITIES`: The structure populated with timestamping capability information.
+
+4. **Return Value**: The function returns `NO_ERROR` if successful, or an error code if it fails (e.g., if the specified interface does not support timestamping).
+
+### Example: Using `GetInterfaceActiveTimestampCapabilities`
+
+Here is a brief example of how to use `GetInterfaceActiveTimestampCapabilities` to check if a network interface supports hardware timestamping:
+
+```c
+#include <stdio.h>
+#include <Iphlpapi.h>
+#include <Windows.h>
+
+#pragma comment(lib, "Iphlpapi.lib")
+
+int main() {
+    NET_LUID InterfaceLuid;
+    MIB_INTERFACE_TIMESTAMP_CAPABILITIES TimestampCapabilities;
+    DWORD dwRetVal;
+
+    // Assume InterfaceLuid is already obtained
+    // For example, you can use ConvertInterfaceIndexToLuid to get InterfaceLuid from InterfaceIndex
+
+    dwRetVal = GetInterfaceActiveTimestampCapabilities(&InterfaceLuid, &TimestampCapabilities);
+    if (dwRetVal == NO_ERROR) {
+        printf("Timestamping supported: %s\n", TimestampCapabilities.SupportsHardwareTimestamp ? "Yes" : "No");
+        printf("Send timestamping: %s\n", TimestampCapabilities.SupportsTransmitTimestamp ? "Yes" : "No");
+        printf("Receive timestamping: %s\n", TimestampCapabilities.SupportsReceiveTimestamp ? "Yes" : "No");
+    } else {
+        printf("Failed to get timestamping capabilities. Error: %lu\n", dwRetVal);
+    }
+
+    return 0;
+}
+```
+
+### Practical Application
+
+For implementing gPTP or similar protocols that rely on precise timing, `GetInterfaceActiveTimestampCapabilities` is a useful function to determine if a network adapter can provide the necessary hardware timestamping support. You can use this function as part of the initialization process to ensure that the chosen adapter meets the timing requirements of your application.
+
+### See Also
+
+The documentation’s “See Also” section lists other related functions and structures that are relevant for managing and retrieving timestamping and interface capabilities. Here are some of the notable entries:
+
+* `GetAdaptersAddresses`: Retrieves comprehensive information about network adapters, which can help identify interfaces that might support timestamping.
+* `ConvertInterfaceLuidToIndex` and `ConvertInterfaceIndexToLuid`: These functions convert between LUID and InterfaceIndex, both used to reference network interfaces.
+* `MIB_INTERFACE_TIMESTAMP_CAPABILITIES`: The structure populated by `GetInterfaceActiveTimestampCapabilities`, which provides details on the timestamping abilities of the network interface.
+
 ## GitHub Actions CI Pipeline
 
 A GitHub Actions CI pipeline has been added to compile the code for both Linux and Windows platforms. The CI pipeline sets up the environment, installs dependencies, and runs the build commands for both platforms.
