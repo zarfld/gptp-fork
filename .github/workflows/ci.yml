@@ -71,7 +71,6 @@ jobs:
         choco install winpcap
         choco install cppcheck
         choco install llvm
-        choco install iphlpapi
 
     - name: Build project
       run: |
