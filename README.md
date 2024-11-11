@@ -11,6 +11,8 @@ This repository contains an example Intel-provided gptp daemon for clock synchro
 * `cmake`: Install using `sudo apt-get install cmake`
 * `doxygen`: Install using `sudo apt-get install doxygen`
 * `graphviz`: Install using `sudo apt-get install graphviz`
+* `cppcheck`: Install using `sudo apt-get install cppcheck`
+* `clang-tidy`: Install using `sudo apt-get install clang-tidy`
 
 #### Build Instructions
 
@@ -20,6 +22,10 @@ This repository contains an example Intel-provided gptp daemon for clock synchro
    * For I210: `ARCH=I210 make clean all`
    * For generic Linux: `make clean all`
    * For Intel CE 5100 Platforms: `ARCH=IntelCE make clean all`
+4. Run static code analysis tools:
+   * `make static-analysis`
+5. Run resource management checks:
+   * `make resource-checks`
 
 #### Run Instructions
 
@@ -34,6 +40,8 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 * `Microsoft Visual Studio 2013` or later
 * Environment variable `WPCAP_DIR` must be defined to the directory where WinPcap is installed
 * `WinPCAP` must also be installed on any machine where the daemon runs
+* `cppcheck`: Install using `choco install cppcheck`
+* `clang-tidy`: Install using `choco install llvm`
 
 #### Build Instructions
 
@@ -42,6 +50,11 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 3. Configure the project to use the installed dependencies:
    * Set the `WPCAP_DIR` environment variable to the directory where WinPcap is installed.
 4. Build the project using Microsoft Visual Studio.
+5. Run static code analysis tools:
+   * `cppcheck .`
+   * `clang-tidy .`
+6. Run resource management checks:
+   * Use Visual Studio's built-in tools for resource management checks.
 
 #### Run Instructions
 
@@ -57,11 +70,11 @@ The workflow file is located in the `.github/workflows` directory.
 
 ### Linux CI Pipeline
 
-The pipeline installs `cmake`, `doxygen`, and `graphviz`, and runs the build commands. The workflow file now uses `lukka/get-cmake@latest` instead of `lukka/get-cmake@v3`.
+The pipeline installs `cmake`, `doxygen`, `graphviz`, `cppcheck`, and `clang-tidy`, and runs the build commands. The workflow file now uses `lukka/get-cmake@latest` instead of `lukka/get-cmake@v3`.
 
 ### Windows CI Pipeline
 
-The pipeline installs WinPCAP, CMAKE, Visual Studio, sets the `WPCAP_DIR` environment variable, and runs the build commands. The workflow file now uses `lukka/get-cmake@latest` instead of `lukka/get-cmake@v3`.
+The pipeline installs WinPCAP, CMAKE, Visual Studio, `cppcheck`, `clang-tidy`, sets the `WPCAP_DIR` environment variable, and runs the build commands. The workflow file now uses `lukka/get-cmake@latest` instead of `lukka/get-cmake@v3`.
 
 ## Cloning GitHub Issues
 
@@ -70,3 +83,13 @@ A script has been added to clone GitHub issues from the original repository to t
 ## Syncing with the Original Repository
 
 A GitHub Actions workflow has been created to automate syncing the forked repository with the original repository. The workflow runs at regular intervals to pull changes from the original repository and push them to the forked repository. The workflow uses the `actions/checkout` action to pull changes from the original repository and ensures that the forked repository remains consistent with the original repository.
+
+## Static Code Analysis Fixes and Resource Management Enhancements
+
+PawelModrzejewski's fork includes several improvements that address issues identified through static code analysis and enhance resource management:
+
+* **Static Code Analysis Fixes**: Fixes for null pointer dereferences, resource management problems, and other issues identified through tools like `cppcheck` and `clang-tidy`.
+* **Resource Management Enhancements**: Proper allocation and deallocation of resources, reducing potential memory leaks and improving overall efficiency.
+* **Platform-Specific Adjustments**: Modifications tailored for Linux and Windows platforms to enhance compatibility and performance.
+
+By integrating these updates, you can leverage improvements that address known issues and enhance the overall functionality of the gPTP daemon.

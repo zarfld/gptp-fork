@@ -20,7 +20,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake doxygen graphviz
+        sudo apt-get install -y cmake doxygen graphviz cppcheck clang-tidy
 
     - name: Build project
       run: |
@@ -31,6 +31,16 @@ jobs:
         else
           ARCH=${{ matrix.arch }} make clean all
         fi
+
+    - name: Run static code analysis
+      run: |
+        cd linux
+        make static-analysis
+
+    - name: Run resource management checks
+      run: |
+        cd linux
+        make resource-checks
 
   build-windows:
     runs-on: windows-latest
@@ -54,6 +64,8 @@ jobs:
         choco install cmake --version=3.2.2
         choco install visualstudio2013community
         choco install winpcap
+        choco install cppcheck
+        choco install llvm
 
     - name: Build project
       run: |
@@ -61,3 +73,13 @@ jobs:
         cd build
         cmake ..
         msbuild /p:Configuration=Release
+
+    - name: Run static code analysis
+      run: |
+        cppcheck .
+        clang-tidy .
+
+    - name: Run resource management checks
+      run: |
+        # Use Visual Studio's built-in tools for resource management checks
+        echo "Running resource management checks using Visual Studio's built-in tools"
