@@ -63,6 +63,10 @@ The pipeline installs `cmake`, `doxygen`, and `graphviz`, and runs the build com
 
 The pipeline installs WinPCAP, CMAKE, Visual Studio, sets the `WPCAP_DIR` environment variable, and runs the build commands.
 
+### Updated CI Pipeline Schedule
+
+The `build-windows (x64)` job runs on check-in. Other build jobs run on a weekly interval.
+
 ## Cloning GitHub Issues
 
 A script has been added to clone GitHub issues from the original repository to the forked repository using the GitHub API. The script fetches issues from the original repository using the `GET /repos/{owner}/{repo}/issues` endpoint and creates issues in the forked repository using the `POST /repos/{owner}/{repo}/issues` endpoint. The script handles pagination and includes error handling.
