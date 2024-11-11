@@ -22,6 +22,7 @@ This repository contains an example Intel-provided gptp daemon for clock synchro
    * For I210: `ARCH=I210 make clean all`
    * For generic Linux: `make clean all`
    * For Intel CE 5100 Platforms: `ARCH=IntelCE make clean all`
+   * For building with IP Helper API: `make build-with-iphlpapi`
 4. Run static code analysis tools:
    * `make static-analysis`
 5. Run resource management checks:
@@ -55,6 +56,8 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
    * `clang-tidy .`
 6. Run resource management checks:
    * Use Visual Studio's built-in tools for resource management checks.
+7. Integrate Intel hardware timestamping with packet timestamping:
+   * Use the `IntegrateIntelHardwareTimestampingWithPacketTimestamping` function from `src/timestamping.cpp` to integrate Intel hardware timestamping.
 
 #### Run Instructions
 
