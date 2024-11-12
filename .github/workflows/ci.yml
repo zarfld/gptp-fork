@@ -73,10 +73,11 @@ jobs:
     - name: Install dependencies
       run: |
         choco install cmake --version=3.2.2
-        choco install visualstudio2013community
+        choco install visualstudio2022community
         choco install winpcap
         choco install cppcheck
         choco install llvm
+        choco install msbuild
 
     - name: Build project
       run: |
@@ -141,10 +142,11 @@ jobs:
     - name: Install dependencies
       run: |
         choco install cmake --version=3.2.2
-        choco install visualstudio2013community
+        choco install visualstudio2022community
         choco install winpcap
         choco install cppcheck
         choco install llvm
+        choco install msbuild
 
     - name: Build project
       run: |
