@@ -74,3 +74,47 @@ A script has been added to clone GitHub issues from the original repository to t
 ## Syncing with the Original Repository
 
 A GitHub Actions workflow has been created to automate syncing the forked repository with the original repository. The workflow runs at regular intervals to pull changes from the original repository and push them to the forked repository. The workflow uses the `actions/checkout` action to pull changes from the original repository and ensures that the forked repository remains consistent with the original repository. The workflow now uses `git pull upstream main` instead of `git merge upstream/main` to pull and merge changes from the `upstream/main` branch into the `main` branch.
+
+## CMakeLists.txt
+
+A `CMakeLists.txt` file has been added to the root directory of the repository. This file includes the necessary configuration for building the project on both Linux and Windows platforms.
+
+### Usage Instructions
+
+#### Linux
+
+1. Clone the repository from GitHub.
+2. Navigate to the root directory of the repository.
+3. Create a build directory and navigate into it:
+   ```sh
+   mkdir build
+   cd build
+   ```
+4. Run `cmake` to configure the project:
+   ```sh
+   cmake ..
+   ```
+5. Build the project:
+   ```sh
+   make
+   ```
+
+#### Windows
+
+1. Clone the repository from GitHub.
+2. Navigate to the root directory of the repository.
+3. Create a build directory and navigate into it:
+   ```sh
+   mkdir build
+   cd build
+   ```
+4. Run `cmake` to configure the project:
+   ```sh
+   cmake ..
+   ```
+5. Build the project using Microsoft Visual Studio:
+   ```sh
+   msbuild /p:Configuration=Release
+   ```
+
+The `CMakeLists.txt` file supports different architectures (e.g., `x64`, `x86`, `I210`, `generic`, `IntelCE`) and handles dependencies like `WinPCAP` and environment variables such as `WPCAP_DIR`.
