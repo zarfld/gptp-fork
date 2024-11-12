@@ -32,27 +32,25 @@ jobs:
 
     - name: Build project
       run: |
-        mkdir -p linux
-        cd linux
-        if [ "${{ matrix.arch }}" == "generic" ]; then
-          make clean all
-        else
-          ARCH=${{ matrix.arch }} make clean all
-        fi
+        mkdir -p build
+        cd build
+        cmake -DARCH=${{ matrix.arch }} ..
+        make
 
     - name: Build with IP Helper API
       run: |
-        cd linux
-        make build-with-iphlpapi
+        cd build
+        cmake -DIPHLAPI=ON -DARCH=${{ matrix.arch }} ..
+        make
 
     - name: Run static code analysis
       run: |
-        cd linux
+        cd build
         make static-analysis
 
     - name: Run resource management checks
       run: |
-        cd linux
+        cd build
         make resource-checks
 
   build-windows:
