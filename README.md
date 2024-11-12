@@ -31,7 +31,8 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 
 * `WinPCAP Developer's Pack (WpdPack)`: Download from WinPCAP Developer's Pack
 * `CMAKE 3.2.2` or later
-* `Microsoft Visual Studio 2013` or later
+* `Microsoft Visual Studio 2022` or later
+* `msbuild`: Install using `choco install msbuild`
 * Environment variable `WPCAP_DIR` must be defined to the directory where WinPcap is installed
 * `WinPCAP` must also be installed on any machine where the daemon runs
 
