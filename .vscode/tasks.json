@@ -19,7 +19,13 @@
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": ["$msCompile"]
+      "problemMatcher": ["$msCompile"],
+      "options": {
+        "env": {
+          "VSCMD_DEBUG": "3",
+          "VSCMD_SKIP_SENDTELEMETRY": "1"
+        }
+      }
     },
     {
       "label": "Static Analysis (cppcheck)",

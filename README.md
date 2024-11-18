@@ -31,9 +31,11 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 
 * `WinPCAP Developer's Pack (WpdPack)`: Download from WinPCAP Developer's Pack
 * `CMAKE 3.2.2` or later
-* `Microsoft Visual Studio 2013` or later
+* `Microsoft Visual Studio 2022` or later
 * Environment variable `WPCAP_DIR` must be defined to the directory where WinPcap is installed
 * `WinPCAP` must also be installed on any machine where the daemon runs
+* `VSCMD_DEBUG` environment variable set to `3` to enable detailed logging for Visual Studio command-line tools
+* `VSCMD_SKIP_SENDTELEMETRY` environment variable set to `1` to disable telemetry data collection by Visual Studio command-line tools
 
 #### Build Instructions
 
