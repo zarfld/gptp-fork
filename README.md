@@ -118,3 +118,27 @@ A `CMakeLists.txt` file has been added to the root directory of the repository. 
    ```
 
 The `CMakeLists.txt` file supports different architectures (e.g., `x64`, `x86`, `I210`, `generic`, `IntelCE`) and handles dependencies like `WinPCAP` and environment variables such as `WPCAP_DIR`.
+
+## Using Visual Studio Code Tasks
+
+A `.vscode` directory has been added to the repository, containing a `tasks.json` file that defines tasks for building and testing the project. These tasks can be run directly from Visual Studio Code.
+
+### Available Tasks
+
+The following tasks are available in the `tasks.json` file:
+
+* Build the project using CMake
+* Run static code analysis using `cppcheck` and `clang-tidy`
+* Run resource management checks using `valgrind` on Linux
+* Build the project with IP Helper API on Linux
+* Run the gptp daemon on both Linux and Windows platforms
+
+### Running Tasks
+
+To run a task in Visual Studio Code:
+
+1. Open the Command Palette (Ctrl+Shift+P or Cmd+Shift+P on macOS).
+2. Type `Tasks: Run Task` and select it.
+3. Choose the desired task from the list.
+
+By using these tasks, you can easily build and test the project directly from Visual Studio Code.

@@ -1,0 +1,70 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build (Linux)",
+      "type": "shell",
+      "command": "mkdir -p build && cd build && cmake .. && make",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Build (Windows)",
+      "type": "shell",
+      "command": "mkdir build && cd build && cmake .. && msbuild /p:Configuration=Release",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Static Analysis (cppcheck)",
+      "type": "shell",
+      "command": "cppcheck --enable=all --inconclusive --quiet .",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Static Analysis (clang-tidy)",
+      "type": "shell",
+      "command": "clang-tidy **/*.cpp -- -I.",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Resource Management Checks (valgrind)",
+      "type": "shell",
+      "command": "valgrind --leak-check=full ./daemon_cl",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build with IP Helper API (Linux)",
+      "type": "shell",
+      "command": "mkdir -p build && cd build && cmake -DIPHLAPI=ON .. && make",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Run gptp daemon (Linux)",
+      "type": "shell",
+      "command": "./daemon_cl <interface-name>",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run gptp daemon (Windows)",
+      "type": "shell",
+      "command": "daemon_cl.exe xx-xx-xx-xx-xx-xx",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}
