@@ -29,11 +29,11 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 
 #### Build Dependencies
 
-* `WinPCAP Developer's Pack (WpdPack)`: Download from WinPCAP Developer's Pack
+* `Npcap Developer's Pack (Npcap SDK)`: Download from Npcap Developer's Pack
 * `CMAKE 3.2.2` or later
 * `Microsoft Visual Studio 2022` or later
-* Environment variable `WPCAP_DIR` must be defined to the directory where WinPcap is installed
-* `WinPCAP` must also be installed on any machine where the daemon runs
+* Environment variable `NPCAP_DIR` must be defined to the directory where Npcap is installed
+* `Npcap` must also be installed on any machine where the daemon runs
 * `VSCMD_DEBUG` environment variable set to `3` to enable detailed logging for Visual Studio command-line tools
 * `VSCMD_SKIP_SENDTELEMETRY` environment variable set to `1` to disable telemetry data collection by Visual Studio command-line tools
 
@@ -42,7 +42,7 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 1. Clone the repository from GitHub.
 2. Open the project in Microsoft Visual Studio.
 3. Configure the project to use the installed dependencies:
-   * Set the `WPCAP_DIR` environment variable to the directory where WinPcap is installed.
+   * Set the `NPCAP_DIR` environment variable to the directory where Npcap is installed.
 4. Build the project using Microsoft Visual Studio.
 
 #### Run Instructions
@@ -63,7 +63,7 @@ The pipeline installs `cmake`, `doxygen`, and `graphviz`, and runs the build com
 
 ### Windows CI Pipeline
 
-The pipeline installs WinPCAP, CMAKE, Visual Studio, sets the `WPCAP_DIR` environment variable, and runs the build commands.
+The pipeline installs Npcap, CMAKE, Visual Studio, sets the `NPCAP_DIR` environment variable, and runs the build commands.
 
 ### Updated CI Pipeline Schedule
 
@@ -119,7 +119,7 @@ A `CMakeLists.txt` file has been added to the root directory of the repository. 
    msbuild /p:Configuration=Release
    ```
 
-The `CMakeLists.txt` file supports different architectures (e.g., `x64`, `x86`, `I210`, `generic`, `IntelCE`) and handles dependencies like `WinPCAP` and environment variables such as `WPCAP_DIR`.
+The `CMakeLists.txt` file supports different architectures (e.g., `x64`, `x86`, `I210`, `generic`, `IntelCE`) and handles dependencies like `Npcap` and environment variables such as `NPCAP_DIR`.
 
 ## Using Visual Studio Code Tasks
 
