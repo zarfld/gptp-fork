@@ -61,7 +61,7 @@ jobs:
         arch: [x64]
 
     env:
-      WPCAP_DIR: ${{ secrets.WPCAP_DIR }}
+      NPCAP_DIR: ${{ secrets.NPCAP_DIR }}
       VSCMD_DEBUG: 3
       VSCMD_SKIP_SENDTELEMETRY: 1
 
@@ -76,7 +76,7 @@ jobs:
       run: |
         choco install cmake --version=3.2.2
         choco install visualstudio2022community
-        choco install winpcap
+        choco install npcap
         choco install cppcheck
         choco install llvm
 
@@ -131,7 +131,7 @@ jobs:
         arch: [x86]
 
     env:
-      WPCAP_DIR: ${{ secrets.WPCAP_DIR }}
+      NPCAP_DIR: ${{ secrets.NPCAP_DIR }}
       VSCMD_DEBUG: 3
       VSCMD_SKIP_SENDTELEMETRY: 1
 
@@ -146,7 +146,7 @@ jobs:
       run: |
         choco install cmake --version=3.2.2
         choco install visualstudio2022community
-        choco install winpcap
+        choco install npcap
         choco install cppcheck
         choco install llvm
 

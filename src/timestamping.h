@@ -9,10 +9,10 @@
 DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities);
 DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities);
 
-// Ensure that the WPCAP_DIR environment variable is correctly set for Visual Studio 2022
+// Ensure that the NPCAP_DIR environment variable is correctly set for Visual Studio 2022
 #ifdef _WIN32
 #include <cstdlib>
-const char* WPCAP_DIR = std::getenv("WPCAP_DIR");
+const char* NPCAP_DIR = std::getenv("NPCAP_DIR");
 #endif
 
 // Add the VSCMD_DEBUG environment variable set to 3 to enable detailed logging for Visual Studio command-line tools
