@@ -142,3 +142,46 @@ To run a task in Visual Studio Code:
 3. Choose the desired task from the list.
 
 By using these tasks, you can easily build and test the project directly from Visual Studio Code.
+
+### Configuring W32Time for PTP Support on Windows
+
+To configure W32Time for PTP support on Windows, follow these steps:
+
+1. Open a command prompt with administrative privileges.
+2. Run the following commands to configure W32Time:
+   ```sh
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v AnnounceFlags /t REG_DWORD /d 5 /f
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient" /v Enabled /t REG_DWORD /d 1 /f
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient" /v SpecialPollInterval /t REG_DWORD /d 900 /f
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpServer" /v Enabled /t REG_DWORD /d 1 /f
+   net stop w32time
+   net start w32time
+   ```
+
+### Integrating Intel Hardware Timestamping on Windows
+
+To integrate Intel hardware timestamping on Windows, follow these steps:
+
+1. Open a command prompt with administrative privileges.
+2. Navigate to the `src` directory.
+3. Compile the `timestamping.cpp` file:
+   ```sh
+   cl /EHsc timestamping.cpp
+   ```
+4. Run the `timestamping.exe` executable:
+   ```sh
+   timestamping.exe
+   ```
+
+To build and run the `IntegrateIntelHardwareTimestampingWithPacketTimestamping` function, follow these steps:
+
+1. Open a command prompt with administrative privileges.
+2. Navigate to the `src` directory.
+3. Compile the `timestamping.cpp` file:
+   ```sh
+   cl /EHsc timestamping.cpp
+   ```
+4. Run the `timestamping.exe` executable with the `IntegrateIntelHardwareTimestampingWithPacketTimestamping` function:
+   ```sh
+   timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
+   ```
