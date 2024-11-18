@@ -62,6 +62,8 @@ jobs:
 
     env:
       WPCAP_DIR: ${{ secrets.WPCAP_DIR }}
+      VSCMD_DEBUG: 3
+      VSCMD_SKIP_SENDTELEMETRY: 1
 
     steps:
     - name: Checkout code
@@ -73,7 +75,7 @@ jobs:
     - name: Install dependencies
       run: |
         choco install cmake --version=3.2.2
-        choco install visualstudio2013community
+        choco install visualstudio2022community
         choco install winpcap
         choco install cppcheck
         choco install llvm
@@ -130,6 +132,8 @@ jobs:
 
     env:
       WPCAP_DIR: ${{ secrets.WPCAP_DIR }}
+      VSCMD_DEBUG: 3
+      VSCMD_SKIP_SENDTELEMETRY: 1
 
     steps:
     - name: Checkout code
@@ -141,7 +145,7 @@ jobs:
     - name: Install dependencies
       run: |
         choco install cmake --version=3.2.2
-        choco install visualstudio2013community
+        choco install visualstudio2022community
         choco install winpcap
         choco install cppcheck
         choco install llvm
