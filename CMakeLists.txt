@@ -40,3 +40,9 @@ elseif(ARCH STREQUAL "generic")
 elseif(ARCH STREQUAL "IntelCE")
   add_definitions(-DARCH_INTELCE)
 endif()
+
+# Environment variables for Visual Studio 2022
+if(WIN32)
+  set(ENV{VSCMD_DEBUG} 3)
+  set(ENV{VSCMD_SKIP_SENDTELEMETRY} 1)
+endif()
