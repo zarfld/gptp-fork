@@ -1,0 +1,98 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build (Linux)",
+      "type": "shell",
+      "command": "mkdir -p build && cd build && cmake .. && make",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Build (Windows)",
+      "type": "shell",
+      "command": "mkdir build && cd build && cmake .. && msbuild /p:Configuration=Release",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Static Analysis (cppcheck)",
+      "type": "shell",
+      "command": "cppcheck --enable=all --inconclusive --quiet .",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Static Analysis (clang-tidy)",
+      "type": "shell",
+      "command": "clang-tidy **/*.cpp -- -I.",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Resource Management Checks (valgrind)",
+      "type": "shell",
+      "command": "valgrind --leak-check=full ./daemon_cl",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build with IP Helper API (Linux)",
+      "type": "shell",
+      "command": "mkdir -p build && cd build && cmake -DIPHLAPI=ON .. && make",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Run gptp daemon (Linux)",
+      "type": "shell",
+      "command": "./daemon_cl <interface-name>",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run gptp daemon (Windows)",
+      "type": "shell",
+      "command": "daemon_cl.exe xx-xx-xx-xx-xx-xx",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Fetch MAC Address (Windows)",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File .vscode/fetch_mac_address.ps1",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Configure W32Time for PTP Support (Windows)",
+      "type": "shell",
+      "command": "reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\W32Time\\Config\" /v AnnounceFlags /t REG_DWORD /d 5 /f && reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\NtpClient\" /v Enabled /t REG_DWORD /d 1 /f && reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\NtpClient\" /v SpecialPollInterval /t REG_DWORD /d 900 /f && reg add \"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\NtpServer\" /v Enabled /t REG_DWORD /d 1 /f && net stop w32time && net start w32time",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Integrate Intel Hardware Timestamping (Windows)",
+      "type": "shell",
+      "command": "cd src && cl /EHsc timestamping.cpp && timestamping.exe",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Integrate Intel Hardware Timestamping with Packet Timestamping (Windows)",
+      "type": "shell",
+      "command": "cd src && cl /EHsc timestamping.cpp && timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

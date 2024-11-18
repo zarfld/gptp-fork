@@ -118,3 +118,70 @@ A `CMakeLists.txt` file has been added to the root directory of the repository. 
    ```
 
 The `CMakeLists.txt` file supports different architectures (e.g., `x64`, `x86`, `I210`, `generic`, `IntelCE`) and handles dependencies like `WinPCAP` and environment variables such as `WPCAP_DIR`.
+
+## Using Visual Studio Code Tasks
+
+A `.vscode` directory has been added to the repository, containing a `tasks.json` file that defines tasks for building and testing the project. These tasks can be run directly from Visual Studio Code.
+
+### Available Tasks
+
+The following tasks are available in the `tasks.json` file:
+
+* Build the project using CMake
+* Run static code analysis using `cppcheck` and `clang-tidy`
+* Run resource management checks using `valgrind` on Linux
+* Build the project with IP Helper API on Linux
+* Run the gptp daemon on both Linux and Windows platforms
+
+### Running Tasks
+
+To run a task in Visual Studio Code:
+
+1. Open the Command Palette (Ctrl+Shift+P or Cmd+Shift+P on macOS).
+2. Type `Tasks: Run Task` and select it.
+3. Choose the desired task from the list.
+
+By using these tasks, you can easily build and test the project directly from Visual Studio Code.
+
+### Configuring W32Time for PTP Support on Windows
+
+To configure W32Time for PTP support on Windows, follow these steps:
+
+1. Open a command prompt with administrative privileges.
+2. Run the following commands to configure W32Time:
+   ```sh
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\Config" /v AnnounceFlags /t REG_DWORD /d 5 /f
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient" /v Enabled /t REG_DWORD /d 1 /f
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient" /v SpecialPollInterval /t REG_DWORD /d 900 /f
+   reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpServer" /v Enabled /t REG_DWORD /d 1 /f
+   net stop w32time
+   net start w32time
+   ```
+
+### Integrating Intel Hardware Timestamping on Windows
+
+To integrate Intel hardware timestamping on Windows, follow these steps:
+
+1. Open a command prompt with administrative privileges.
+2. Navigate to the `src` directory.
+3. Compile the `timestamping.cpp` file:
+   ```sh
+   cl /EHsc timestamping.cpp
+   ```
+4. Run the `timestamping.exe` executable:
+   ```sh
+   timestamping.exe
+   ```
+
+To build and run the `IntegrateIntelHardwareTimestampingWithPacketTimestamping` function, follow these steps:
+
+1. Open a command prompt with administrative privileges.
+2. Navigate to the `src` directory.
+3. Compile the `timestamping.cpp` file:
+   ```sh
+   cl /EHsc timestamping.cpp
+   ```
+4. Run the `timestamping.exe` executable with the `IntegrateIntelHardwareTimestampingWithPacketTimestamping` function:
+   ```sh
+   timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
+   ```
