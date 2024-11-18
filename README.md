@@ -49,6 +49,18 @@ To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface
 
 To execute the daemon, run `daemon_cl.exe xx-xx-xx-xx-xx-xx`, replacing `xx-xx-xx-xx-xx-xx` with the MAC address of the local interface.
 
+### Using Visual Studio Project Files
+
+#### Build Instructions
+
+1. Clone the repository from GitHub.
+2. Open the `gptp.sln` solution file in Microsoft Visual Studio.
+3. Build the project using the `Release` configuration.
+
+#### Run Instructions
+
+To execute the daemon, run `daemon_cl.exe xx-xx-xx-xx-xx-xx`, replacing `xx-xx-xx-xx-xx-xx` with the MAC address of the local interface.
+
 ## GitHub Actions CI Pipeline
 
 A GitHub Actions CI pipeline has been added to compile the code for both Linux and Windows platforms. The CI pipeline sets up the environment, installs dependencies, and runs the build commands for both platforms.
