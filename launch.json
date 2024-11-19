@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch gptp",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/gptp.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "NPCAP_DIR",
+          "value": "C:\\Program Files\\Npcap"
+        },
+        {
+          "name": "VSCMD_DEBUG",
+          "value": "3"
+        },
+        {
+          "name": "VSCMD_SKIP_SENDTELEMETRY",
+          "value": "1"
+        }
+      ],
+      "externalConsole": false,
+      "preLaunchTask": "Build (Windows)"
+    }
+  ],
+  "comments": {
+    "NPCAP_DIR": "Set this to the directory where Npcap is installed.",
+    "VSCMD_DEBUG": "Set this to 3 to enable detailed logging for Visual Studio command-line tools.",
+    "VSCMD_SKIP_SENDTELEMETRY": "Set this to 1 to disable telemetry data collection by Visual Studio command-line tools."
+  }
+}
