@@ -1,6 +1,7 @@
 #include <Iphlpapi.h>
 #include <Windows.h>
 #include <stdio.h>
+#include <iostream>
 
 #pragma comment(lib, "Iphlpapi.lib")
 
@@ -34,6 +35,29 @@ DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *Interfa
     }
 
     return dwRetVal;
+}
+
+void EnablePTPTimestamping() {
+    HKEY hKey;
+    LPCWSTR subKey = L"SYSTEM\\CurrentControlSet\\Services\\YourIntelDriver\\Parameters";
+    DWORD data = 1;  // 1 to enable, 0 to disable (example)
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subKey, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
+        if (RegSetValueEx(hKey, L"PTPhardwaretimestamp", 0, REG_DWORD, (const BYTE*)&data, sizeof(data)) == ERROR_SUCCESS) {
+            std::cout << "PTP hardware timestamping enabled.\n";
+        } else {
+            std::cout << "Failed to set registry value.\n";
+        }
+        RegCloseKey(hKey);
+    } else {
+        std::cout << "Failed to open registry key.\n";
+    }
+}
+
+void SetInterfaceProperties() {
+    // Add logic to call SetInterfaceProperties with appropriate parameters
+    // Handle the return value to check for success or failure
+    // Print the result of the operation if the call is successful
 }
 
 // Ensure that the NPCAP_DIR environment variable is correctly set for Visual Studio 2022
