@@ -199,3 +199,70 @@ To build and run the `IntegrateIntelHardwareTimestampingWithPacketTimestamping` 
    ```sh
    timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
    ```
+
+## Enabling PTP Hardware Timestamping Programmatically
+
+To enable PTP hardware timestamping programmatically, follow these steps:
+
+### Using Windows API
+
+1. Include the necessary headers: `Iphlpapi.h` and `Windows.h`
+2. Ensure the `Iphlpapi.lib` library is linked
+3. Define a function that calls `GetInterfaceActiveTimestampCapabilities` with appropriate parameters
+4. Handle the return value to check for success or failure
+5. Print the timestamping capabilities if the call is successful
+
+### Using Intel Driver API
+
+1. Consult Intel's official documentation or support to find the specific IOCTL codes for enabling and configuring hardware timestamping.
+2. Look for any header files or documentation provided by Intel that define the IOCTL codes and their usage.
+3. Use the `DeviceIoControl` function in Windows to send the IOCTL commands to the Intel network adapter driver.
+
+### Modifying the Registry
+
+1. Use the Windows Registry API (RegSetValueEx in C++, PowerShell, or similar methods in other languages) to update the registry key for enabling PTP hardware timestamping.
+2. Be cautious, as registry changes typically require elevated privileges and may necessitate a network interface reset for changes to take effect.
+
+Example Code for Registry Modification (C++)
+
+If there is a registry key (e.g., PTPhardwaretimestamp) that controls this setting, you could modify it as follows:
+
+```cpp
+#include <windows.h>
+#include <iostream>
+
+void EnablePTPTimestamping() {
+    HKEY hKey;
+    LPCWSTR subKey = L"SYSTEM\\CurrentControlSet\\Services\\YourIntelDriver\\Parameters";
+    DWORD data = 1;  // 1 to enable, 0 to disable (example)
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subKey, 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
+        if (RegSetValueEx(hKey, L"PTPhardwaretimestamp", 0, REG_DWORD, (const BYTE*)&data, sizeof(data)) == ERROR_SUCCESS) {
+            std::cout << "PTP hardware timestamping enabled.\n";
+        } else {
+            std::cout << "Failed to set registry value.\n";
+        }
+        RegCloseKey(hKey);
+    } else {
+        std::cout << "Failed to open registry key.\n";
+    }
+}
+```
+
+### Automating Network Interface Reset
+
+To automate the network interface reset after registry changes, use the `netsh` command:
+
+1. Use the `netsh` command to disable and then enable the network interface.
+2. This can be done programmatically using a system call in your code.
+
+Example:
+
+```cpp
+#include <cstdlib>
+
+void ResetNetworkInterface() {
+    system("netsh interface set interface \"Ethernet\" admin=disable");
+    system("netsh interface set interface \"Ethernet\" admin=enable");
+}
+```

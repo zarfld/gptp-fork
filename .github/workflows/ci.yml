@@ -123,6 +123,11 @@ jobs:
         cl /EHsc timestamping.cpp
         timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
 
+    - name: Automate network interface reset after registry changes
+      run: |
+        netsh interface set interface "Ethernet" admin=disable
+        netsh interface set interface "Ethernet" admin=enable
+
   build-windows-x86:
     runs-on: windows-latest
 
@@ -192,3 +197,8 @@ jobs:
         cd src
         cl /EHsc timestamping.cpp
         timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
+
+    - name: Automate network interface reset after registry changes
+      run: |
+        netsh interface set interface "Ethernet" admin=disable
+        netsh interface set interface "Ethernet" admin=enable
