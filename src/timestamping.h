@@ -1,11 +1,13 @@
 #ifndef TIMESTAMPING_H
 #define TIMESTAMPING_H
 
-#include <stdint.h> // Stellt sicher, dass UINT32 definiert ist
+#include <stdio.h>
+#include <cstdint> // Stellt sicher, dass UINT32 definiert ist
 #include <Windows.h> // Definiert grundlegende Windows-Datentypen und Funktionen
 #include <Iphlpapi.h> // Definiert Netzwerk- und IP-Hilfsfunktionen und -strukturen
 #include <winapifamily.h> // Definiert die Windows-API-Familienpartitionen
 #include <ipifcons.h> // Definiert Netzwerkschnittstellenkonstanten und -typen
+#include <cstdlib>
 #pragma comment(lib, "Iphlpapi.lib")
 
 DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities);

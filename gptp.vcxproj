@@ -49,6 +49,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>
       </PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(NPCAP_DIR)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Iphlpapi.lib;npcap.lib;Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
