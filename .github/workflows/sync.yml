@@ -22,8 +22,8 @@ jobs:
 
     - name: Merge changes from original repository
       run: |
-        git checkout main
-        git pull upstream main
+        git checkout master
+        git pull upstream master
 
     - name: Print result of git pull
       run: |
