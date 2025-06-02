@@ -124,7 +124,24 @@ jobs:
       run: |
         echo "MSVC INCLUDE paths:"
         echo $INCLUDE | tr ';' '\n'
-        
+
+    - name: Append INCLUDE path after VS env is ready
+      shell: pwsh
+      run: |
+        & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+        $env:INCLUDE = "$env:IPHLPAPI_INCLUDE_DIR_WIN;$env:INCLUDE"
+        echo "INCLUDE is now: $env:INCLUDE"
+        # Now invoke CMake manually here, reusing this modified shell
+        mkdir build
+        cd build
+        cmake -G "Visual Studio 17 2022" -A x64 ..
+        cmake --build . --config Release
+
+    - name: Debug SDK selection
+      run: |
+        echo "MSVC INCLUDE paths:"
+        echo $INCLUDE | tr ';' '\n'
+
     - name: Build project
       run: |
         mkdir build
