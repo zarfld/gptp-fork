@@ -1,15 +1,25 @@
-#define _WIN32_WINNT 0x0A00 // Windows 10
-#include <sdkddkver.h>
-#define WINAPI_FAMILY WINAPI_FAMILY_DESKTOP_APP
+#ifdef _WIN32
+    #ifndef _WIN32_WINNT
+        #define _WIN32_WINNT 0x0A00 // Windows 10
+    #endif
+    #include <sdkddkver.h>
+    #ifndef WINAPI_FAMILY
+        #define WINAPI_FAMILY WINAPI_FAMILY_DESKTOP_APP
+    #endif
+#endif
 
 #include <stdio.h>
 #include <cstdint> // Stellt sicher, dass UINT32 definiert ist
-#include <Windows.h> // Definiert grundlegende Windows-Datentypen und Funktionen
-#include <Iphlpapi.h> // Definiert Netzwerk- und IP-Hilfsfunktionen und -strukturen
-#include <iptypes.h>
-#include <winapifamily.h> // Definiert die Windows-API-Familienpartitionen
-#include <ipifcons.h> // Definiert Netzwerkschnittstellenkonstanten und -typen
+
 #include <cstdlib>
+
+#ifdef _WIN32
+    #include <Windows.h> // Definiert grundlegende Windows-Datentypen und Funktionen
+    #include <Iphlpapi.h> // Definiert Netzwerk- und IP-Hilfsfunktionen und -strukturen
+    #include <iptypes.h>
+    #include <winapifamily.h> // Definiert die Windows-API-Familienpartitionen
+    #include <ipifcons.h> // Definiert Netzwerkschnittstellenkonstanten und -typen
+#endif
 
 #pragma comment(lib, "Iphlpapi.lib")
 
