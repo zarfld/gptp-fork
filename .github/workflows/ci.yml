@@ -83,6 +83,27 @@ jobs:
         choco install cppcheck
         choco install llvm
 
+    - name: Check iphlpapi.h availability and version
+      run: |
+        echo "Searching for iphlpapi.h..."
+        DIRS=$(where /r "C:\Program Files (x86)\Windows Kits" iphlpapi.h 2>nul)
+        if "%DIRS%"=="" (
+          echo "iphlpapi.h not found!"
+          exit 1
+        ) else (
+          echo "Found iphlpapi.h in:"
+          echo %DIRS%
+        )
+        
+        echo "Checking for MIB_INTERFACE_TIMESTAMP_CAPABILITIES..."
+        findstr /C:"MIB_INTERFACE_TIMESTAMP_CAPABILITIES" %DIRS% > nul
+        if errorlevel 1 (
+          echo "MIB_INTERFACE_TIMESTAMP_CAPABILITIES not found in iphlpapi.h"
+          exit 0  # or 1 if you want to fail early
+        ) else (
+          echo "MIB_INTERFACE_TIMESTAMP_CAPABILITIES found"
+        )
+
     - name: Build project
       run: |
         mkdir build
@@ -155,6 +176,27 @@ jobs:
         choco install npcap
         choco install cppcheck
         choco install llvm
+
+    - name: Check iphlpapi.h availability and version
+      run: |
+        echo "Searching for iphlpapi.h..."
+        DIRS=$(where /r "C:\Program Files (x86)\Windows Kits" iphlpapi.h 2>nul)
+        if "%DIRS%"=="" (
+          echo "iphlpapi.h not found!"
+          exit 1
+        ) else (
+          echo "Found iphlpapi.h in:"
+          echo %DIRS%
+        )
+        
+        echo "Checking for MIB_INTERFACE_TIMESTAMP_CAPABILITIES..."
+        findstr /C:"MIB_INTERFACE_TIMESTAMP_CAPABILITIES" %DIRS% > nul
+        if errorlevel 1 (
+          echo "MIB_INTERFACE_TIMESTAMP_CAPABILITIES not found in iphlpapi.h"
+          exit 0  # or 1 if you want to fail early
+        ) else (
+          echo "MIB_INTERFACE_TIMESTAMP_CAPABILITIES found"
+        )
 
     - name: Build project
       run: |
