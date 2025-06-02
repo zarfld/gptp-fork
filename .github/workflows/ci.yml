@@ -85,6 +85,11 @@ jobs:
         choco install llvm
         choco install windows-sdk-10.1
 
+    - name: Debug SDK selection
+      run: |
+        echo "MSVC INCLUDE paths:"
+        echo $INCLUDE | tr ';' '\n'
+
     - name: Locate iphlpapi.h include path
       shell: bash
       run: |
@@ -100,7 +105,15 @@ jobs:
           echo "IPHLPAPI_INCLUDE_DIR_WIN=$WINPATH" >> "$GITHUB_ENV"
         fi
       id: locate_include
-  
+
+    - name: Set INCLUDE path for correct SDK
+      run: echo "INCLUDE=$IPHLPAPI_INCLUDE_DIR_WIN;$INCLUDE" >> $GITHUB_ENV
+
+    - name: Debug SDK selection
+      run: |
+        echo "MSVC INCLUDE paths:"
+        echo $INCLUDE | tr ';' '\n'
+
     - name: Build project
       run: |
         mkdir build
