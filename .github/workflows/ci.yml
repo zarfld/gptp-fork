@@ -95,80 +95,12 @@ jobs:
           exit 1
         else
           DIR=$(dirname "$FOUND")
-          echo "Found iphlpapi.h at $DIR"
-          echo "##[set-output name=iph_dir]$DIR"
+          WINPATH=$(echo "$DIR" | sed -E 's|^/([a-zA-Z])|\1:|' | sed 's|/|\\|g')
+          echo "Found iphlpapi.h at $WINPATH"
+          echo "IPHLPAPI_INCLUDE_DIR_WIN=$WINPATH" >> "$GITHUB_ENV"
         fi
       id: locate_include
   
-    - name: Locate iphlpapi.h from SDK
-      shell: bash
-      run: |
-        echo "Looking for iphlpapi.h..."
-        DIRS=$(cmd /c "dir /s /b \"C:\Program Files (x86)\Windows Kits\10\Include\*\" | findstr /i iphlpapi.h") || true
-        if [ -z \"$DIRS\" ]; then
-          echo "iphlpapi.h not found!"
-        else
-          echo "Found iphlpapi.h at:"
-          echo "$DIRS"
-        fi
-
-    - name: Locate iphlpapi.h from SDK2
-      shell: bash
-      run: |
-        echo "Looking for iphlpapi.h..."
-        DIRS=$(cmd /c "dir /s /b \"C:\Program Files (x86)\*\" | findstr /i iphlpapi.h") || true
-        if [ -z \"$DIRS\" ]; then
-          echo "iphlpapi.h not found!"
-        else
-          echo "Found iphlpapi.h at:"
-          echo "$DIRS"
-        fi
-
-    - name: Locate iphlpapi.h from SDK3
-      shell: bash
-      run: |
-        echo "Looking for iphlpapi.h..."
-        DIRS=$(cmd /c "dir /s /b \"C:\Program Files\*\" | findstr /i iphlpapi.h") || true
-        if [ -z \"$DIRS\" ]; then
-          echo "iphlpapi.h not found!"
-        else
-          echo "Found iphlpapi.h at:"
-          echo "$DIRS"
-        fi
-
-    - name: Check iphlpapi.h availability and version
-      shell: bash
-      run: |
-        echo "Searching for iphlpapi.h..."
-        DIRS=$(cmd /c "dir /s /b \"C:\Program Files\Windows Kits\10\Include\" | findstr /i iphlpapi.h") || true
-        if [ -z "$DIRS" ]; then
-          echo "iphlpapi.h not found!"
-        else
-          echo "Found iphlpapi.h at:"
-          echo "$DIRS"
-        fi
-
-    - name: Check iphlpapi.h availability and version
-      shell: cmd
-      run: |
-        echo "Searching for iphlpapi.h..."
-        DIRS=$(where /r "C:\Program Files (x86)\Windows Kits" iphlpapi.h 2>nul)
-        if "%DIRS%"=="" (
-          echo "iphlpapi.h not found!"
-        ) else (
-          echo "Found iphlpapi.h in:"
-          echo %DIRS%
-        )
-        
-        echo "Checking for MIB_INTERFACE_TIMESTAMP_CAPABILITIES..."
-        findstr /C:"MIB_INTERFACE_TIMESTAMP_CAPABILITIES" %DIRS% > nul
-        if errorlevel 1 (
-          echo "MIB_INTERFACE_TIMESTAMP_CAPABILITIES not found in iphlpapi.h"
-          exit 0  # or 1 if you want to fail early
-        ) else (
-          echo "MIB_INTERFACE_TIMESTAMP_CAPABILITIES found"
-        )
-
     - name: Build project
       run: |
         mkdir build
