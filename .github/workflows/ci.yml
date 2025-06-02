@@ -113,7 +113,18 @@ jobs:
       run: |
         echo "MSVC INCLUDE paths:"
         echo $INCLUDE | tr ';' '\n'
+        
+    - name: Append INCLUDE path after VS env is ready
+      shell: cmd
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+        echo INCLUDE=%IPHLPAPI_INCLUDE_DIR_WIN%;%INCLUDE%>> %GITHUB_ENV%
 
+    - name: Debug SDK selection
+      run: |
+        echo "MSVC INCLUDE paths:"
+        echo $INCLUDE | tr ';' '\n'
+        
     - name: Build project
       run: |
         mkdir build
