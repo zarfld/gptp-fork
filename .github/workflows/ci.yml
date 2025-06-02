@@ -84,6 +84,7 @@ jobs:
         choco install llvm
 
     - name: Check iphlpapi.h availability and version
+      shell: cmd
       run: |
         echo "Searching for iphlpapi.h..."
         DIRS=$(where /r "C:\Program Files (x86)\Windows Kits" iphlpapi.h 2>nul)
@@ -178,6 +179,7 @@ jobs:
         choco install llvm
 
     - name: Check iphlpapi.h availability and version
+      shell: cmd
       run: |
         echo "Searching for iphlpapi.h..."
         DIRS=$(where /r "C:\Program Files (x86)\Windows Kits" iphlpapi.h 2>nul)
