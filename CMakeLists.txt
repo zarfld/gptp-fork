@@ -27,8 +27,16 @@ if(WIN32)
   add_definitions(-DWIN32_LEAN_AND_MEAN)
   add_definitions(-DNOMINMAX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+  
   set(NPCAP_DIR $ENV{NPCAP_DIR})
   include_directories(${NPCAP_DIR}/Include)
+
+  # Add discovered iphlpapi.h path
+  set(IPHLPAPI_INCLUDE_DIR_WIN $ENV{IPHLPAPI_INCLUDE_DIR_WIN})
+  if(IPHLPAPI_INCLUDE_DIR_WIN)
+    include_directories(${IPHLPAPI_INCLUDE_DIR_WIN})
+  endif()
+  
   link_directories(${NPCAP_DIR}/Lib)
   add_executable(gptp ${SOURCES})
   target_link_libraries(gptp Iphlpapi npcap Packet)
