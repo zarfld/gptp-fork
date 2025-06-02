@@ -9,6 +9,12 @@ endif()
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/src)
+# Optional: include dynamically found iphlpapi.h path from GitHub Actions
+if(DEFINED ENV{IPHLPAPI_INCLUDE_DIR_WIN})
+  message(STATUS "Using dynamic Iphlpapi include path: $ENV{IPHLPAPI_INCLUDE_DIR_WIN}")
+  include_directories("$ENV{IPHLPAPI_INCLUDE_DIR_WIN}")
+endif()
+
 
 # Source files
 set(SOURCES
