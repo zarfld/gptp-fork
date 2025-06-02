@@ -87,8 +87,8 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake ..
-        msbuild /p:Configuration=Release
+        cmake -G "Visual Studio 17 2022" -A x64 ..
+        cmake --build . --config Release
 
     - name: Run static code analysis
       run: |
@@ -145,6 +145,9 @@ jobs:
     - name: Set up CMake
       uses: lukka/get-cmake@latest
 
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+      
     - name: Install dependencies
       run: |
         choco install cmake --version=3.2.2
@@ -157,8 +160,8 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake ..
-        msbuild /p:Configuration=Release
+        cmake -G "Visual Studio 17 2022" -A x64 ..
+        cmake --build . --config Release
 
     - name: Run static code analysis
       run: |
