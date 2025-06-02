@@ -85,6 +85,22 @@ jobs:
         choco install llvm
         choco install windows-sdk-10.1
 
+    - name: Install Windows SDK
+      run: |
+        choco install windows-sdk-10-version-2004 --params="'/AddFeature /FeatureName OptionId.DesktopCPPx64 /FeatureName OptionId.DesktopCPPx86'" --yes
+
+    - name: Check iphlpapi.h availability and version
+      run: |
+        echo "Searching for iphlpapi.h..."
+        DIRS=$(cmd /c "dir /s /b \"C:\Program Files (x86)\Windows Kits\10\Include\" | findstr /i iphlpapi.h") || true
+        if [ -z "$DIRS" ]; then
+          echo "iphlpapi.h not found!"
+          exit 1
+        else
+          echo "Found iphlpapi.h at:"
+          echo "$DIRS"
+        fi
+
     - name: Check iphlpapi.h availability and version
       shell: cmd
       run: |
