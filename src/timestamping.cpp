@@ -2,6 +2,7 @@
 #include <cstdint> // Stellt sicher, dass UINT32 definiert ist
 #include <Windows.h> // Definiert grundlegende Windows-Datentypen und Funktionen
 #include <Iphlpapi.h> // Definiert Netzwerk- und IP-Hilfsfunktionen und -strukturen
+#include <iptypes.h>
 #include <winapifamily.h> // Definiert die Windows-API-Familienpartitionen
 #include <ipifcons.h> // Definiert Netzwerkschnittstellenkonstanten und -typen
 #include <cstdlib>
