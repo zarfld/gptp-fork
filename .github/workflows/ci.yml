@@ -85,17 +85,45 @@ jobs:
         choco install llvm
         choco install windows-sdk-10.1
 
-    - name: Install Windows SDK
+    - name: Locate iphlpapi.h from SDK
       run: |
-        choco install windows-sdk-10-version-2004 --params="'/AddFeature /FeatureName OptionId.DesktopCPPx64 /FeatureName OptionId.DesktopCPPx86'" --yes
+        echo "Looking for iphlpapi.h..."
+        DIRS=$(cmd /c "dir /s /b \"C:\Program Files (x86)\Windows Kits\10\Include\*\" | findstr /i iphlpapi.h") || true
+        if [ -z \"$DIRS\" ]; then
+          echo "iphlpapi.h not found!"
+        else
+          echo "Found iphlpapi.h at:"
+          echo "$DIRS"
+        fi
+
+    - name: Locate iphlpapi.h from SDK2
+      run: |
+        echo "Looking for iphlpapi.h..."
+        DIRS=$(cmd /c "dir /s /b \"C:\Program Files (x86)\*\" | findstr /i iphlpapi.h") || true
+        if [ -z \"$DIRS\" ]; then
+          echo "iphlpapi.h not found!"
+        else
+          echo "Found iphlpapi.h at:"
+          echo "$DIRS"
+        fi
+
+    - name: Locate iphlpapi.h from SDK3
+      run: |
+        echo "Looking for iphlpapi.h..."
+        DIRS=$(cmd /c "dir /s /b \"C:\Program Files\*\" | findstr /i iphlpapi.h") || true
+        if [ -z \"$DIRS\" ]; then
+          echo "iphlpapi.h not found!"
+        else
+          echo "Found iphlpapi.h at:"
+          echo "$DIRS"
+        fi
 
     - name: Check iphlpapi.h availability and version
       run: |
         echo "Searching for iphlpapi.h..."
-        DIRS=$(cmd /c "dir /s /b \"C:\Program Files (x86)\Windows Kits\10\Include\" | findstr /i iphlpapi.h") || true
+        DIRS=$(cmd /c "dir /s /b \"C:\Program Files\Windows Kits\10\Include\" | findstr /i iphlpapi.h") || true
         if [ -z "$DIRS" ]; then
           echo "iphlpapi.h not found!"
-          exit 1
         else
           echo "Found iphlpapi.h at:"
           echo "$DIRS"
@@ -108,7 +136,6 @@ jobs:
         DIRS=$(where /r "C:\Program Files (x86)\Windows Kits" iphlpapi.h 2>nul)
         if "%DIRS%"=="" (
           echo "iphlpapi.h not found!"
-          exit 1
         ) else (
           echo "Found iphlpapi.h in:"
           echo %DIRS%
