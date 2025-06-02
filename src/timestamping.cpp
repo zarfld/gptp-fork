@@ -1,3 +1,7 @@
+#define _WIN32_WINNT 0x0A00 // Windows 10
+#include <sdkddkver.h>
+#define WINAPI_FAMILY WINAPI_FAMILY_DESKTOP_APP
+
 #include <stdio.h>
 #include <cstdint> // Stellt sicher, dass UINT32 definiert ist
 #include <Windows.h> // Definiert grundlegende Windows-Datentypen und Funktionen
