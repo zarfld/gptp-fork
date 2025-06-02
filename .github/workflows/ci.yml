@@ -25,6 +25,9 @@ jobs:
     - name: Set up CMake
       uses: lukka/get-cmake@latest
 
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+
     - name: Install dependencies
       run: |
         sudo apt-get update
