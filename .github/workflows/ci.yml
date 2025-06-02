@@ -82,6 +82,7 @@ jobs:
         choco install npcap
         choco install cppcheck
         choco install llvm
+        choco install windows-sdk-11-version-22h2 --no-progres
 
     - name: Check iphlpapi.h availability and version
       shell: cmd
