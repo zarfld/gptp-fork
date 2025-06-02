@@ -181,6 +181,7 @@ jobs:
         choco install npcap
         choco install cppcheck
         choco install llvm
+        choco install windows-sdk-10.1
 
     - name: Check iphlpapi.h availability and version
       shell: cmd
