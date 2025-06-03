@@ -137,6 +137,16 @@ jobs:
         cmake -G "Visual Studio 17 2022" -A x64 ..
         cmake --build . --config Release
 
+    - name: Debug Windows Kits Include directory
+      shell: pwsh
+      run: |
+        $basePath = "C:\Program Files (x86)\Windows Kits\10\Include"
+        Write-Host "Listing contents of: $basePath"
+        Get-ChildItem "$basePath" -Directory | ForEach-Object {
+          Write-Host "Subdirectory: $($_.FullName)"
+          Get-ChildItem "$($_.FullName)" -Name | Out-String | Write-Host
+        }
+
     - name: Debug SDK selection
       run: |
         echo "MSVC INCLUDE paths:"
