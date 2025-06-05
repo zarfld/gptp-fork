@@ -31,6 +31,8 @@ if(WIN32)
   set(NPCAP_DIR $ENV{NPCAP_DIR})
   include_directories(${NPCAP_DIR}/Include)
 
+  add_executable(gptp ${SOURCES})
+  
   # Add discovered iphlpapi.h path
   set(IPHLPAPI_INCLUDE_DIR_WIN $ENV{IPHLPAPI_INCLUDE_DIR_WIN})
   if(IPHLPAPI_INCLUDE_DIR_WIN)
@@ -40,7 +42,7 @@ if(WIN32)
 
   
   link_directories(${NPCAP_DIR}/Lib)
-  add_executable(gptp ${SOURCES})
+  
   target_link_libraries(gptp Iphlpapi npcap Packet)
 else()
   # Linux-specific configurations
