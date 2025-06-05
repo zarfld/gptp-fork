@@ -34,8 +34,10 @@ if(WIN32)
   # Add discovered iphlpapi.h path
   set(IPHLPAPI_INCLUDE_DIR_WIN $ENV{IPHLPAPI_INCLUDE_DIR_WIN})
   if(IPHLPAPI_INCLUDE_DIR_WIN)
-    include_directories(${IPHLPAPI_INCLUDE_DIR_WIN})
+    target_include_directories(gptp BEFORE PRIVATE ${IPHLPAPI_INCLUDE_DIR_WIN})
   endif()
+  message(STATUS "Using Iphlpapi include path: ${IPHLPAPI_INCLUDE_DIR_WIN}")
+
   
   link_directories(${NPCAP_DIR}/Lib)
   add_executable(gptp ${SOURCES})
