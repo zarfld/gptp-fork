@@ -39,11 +39,12 @@
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.exe</TargetExt>
     <SdkIncludeDir>$(SdkIncludeDir);$(IPHLPAPI_INCLUDE_DIR_WIN)</SdkIncludeDir>
+    <WindowsSdkBaseDir>$(IPHLPAPI_INCLUDE_DIR_WIN)\..\</WindowsSdkBaseDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(NPCAP_DIR)\Include;$(SdkIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
@@ -51,7 +52,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(NPCAP_DIR)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      
+      <AdditionalIncludeDirectories>
+        $(NPCAP_DIR)\Include;
+        $(IPHLPAPI_INCLUDE_DIR_WIN);
+        $(WindowsSdkBaseDir)shared;
+        $(WindowsSdkBaseDir)ucrt;
+        $(WindowsSdkBaseDir)winrt;
+        $(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Iphlpapi.lib;npcap.lib;Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
