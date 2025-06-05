@@ -94,7 +94,7 @@ jobs:
       shell: bash
       run: |
         echo "Looking for iphlpapi.h..."
-        FOUND=$(find "/c/Program Files (x86)/Windows Kits/10/Include" -type f -name iphlpapi.h 2>/dev/null | grep -m1 iphlpapi.h)
+        FOUND=$(find "/c/Program Files (x86)/Windows Kits/10/Include" -type f -path "*/um/iphlpapi.h" 2>/dev/null | sort -V | tail -n1)
         if [ -z "$FOUND" ]; then
           echo "iphlpapi.h not found!"
           exit 1
