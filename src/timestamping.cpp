@@ -23,10 +23,15 @@
 
 #pragma comment(lib, "Iphlpapi.lib")
 
-DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities) {
+// Wrapper around the Windows API call to avoid self recursion.
+DWORD GetInterfaceActiveTimestampCapabilitiesWrapper(
+    NET_LUID *InterfaceLuid,
+    MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities) {
     DWORD dwRetVal;
 
-    dwRetVal = GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
+    // Call the actual Windows API function
+    dwRetVal = ::GetInterfaceActiveTimestampCapabilities(InterfaceLuid,
+                                                         TimestampCapabilities);
     if (dwRetVal == NO_ERROR) {
         printf("Timestamping supported: %s\n", TimestampCapabilities->SupportsHardwareTimestamp ? "Yes" : "No");
         printf("Send timestamping: %s\n", TimestampCapabilities->SupportsTransmitTimestamp ? "Yes" : "No");
@@ -38,10 +43,13 @@ DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, MIB_INTER
     return dwRetVal;
 }
 
-DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities) {
+DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(
+    NET_LUID *InterfaceLuid,
+    MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities) {
     DWORD dwRetVal;
 
-    dwRetVal = GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
+    dwRetVal = GetInterfaceActiveTimestampCapabilitiesWrapper(InterfaceLuid,
+                                                             TimestampCapabilities);
     if (dwRetVal == NO_ERROR) {
         printf("Integrating Intel hardware timestamping with packet timestamping...\n");
         // Add logic to integrate Intel hardware timestamping with packet timestamping
