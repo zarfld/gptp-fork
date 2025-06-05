@@ -36,6 +36,20 @@ if(WIN32)
   # Add discovered iphlpapi.h path
   set(IPHLPAPI_INCLUDE_DIR_WIN $ENV{IPHLPAPI_INCLUDE_DIR_WIN})
   if(IPHLPAPI_INCLUDE_DIR_WIN)
+  
+    # Derive base path from full path (strip trailing '/um')
+    get_filename_component(WIN_SDK_BASE "${IPHLPAPI_INCLUDE_DIR_WIN}" DIRECTORY)
+  
+    message(STATUS "Using Windows SDK base path: ${WIN_SDK_BASE}")
+  
+    # Include all necessary directories from SDK
+    include_directories(
+      "${WIN_SDK_BASE}/um"
+      "${WIN_SDK_BASE}/shared"
+      "${WIN_SDK_BASE}/ucrt"
+      "${WIN_SDK_BASE}/winrt"  # optional but safe
+    )
+  
     target_include_directories(gptp BEFORE PRIVATE ${IPHLPAPI_INCLUDE_DIR_WIN})
   endif()
   message(STATUS "Using Iphlpapi include path: ${IPHLPAPI_INCLUDE_DIR_WIN}")
