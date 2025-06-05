@@ -125,6 +125,16 @@ jobs:
         echo "MSVC INCLUDE paths:"
         echo $INCLUDE | tr ';' '\n'
 
+    - name: Debug Windows Kits Include directory
+      shell: pwsh
+      run: |
+        $basePath = "C:\Program Files (x86)\Windows Kits\10\Include"
+        Write-Host "Listing contents of: $basePath"
+        Get-ChildItem "$basePath" -Directory | ForEach-Object {
+          Write-Host "Subdirectory: $($_.FullName)"
+          Get-ChildItem "$($_.FullName)" -Name | Out-String | Write-Host
+        }
+        
     - name: Append INCLUDE path after VS env is ready
       shell: pwsh
       run: |
