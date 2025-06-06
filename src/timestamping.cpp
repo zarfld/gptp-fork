@@ -29,9 +29,9 @@ DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, INTERFACE
     dwRetVal = GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
     if (dwRetVal == NO_ERROR) {
         INTERFACE_HARDWARE_TIMESTAMP_CAPABILITIES HardwareTimestampCapabilities = TimestampCapabilities->HardwareCapabilities;
-        printf("Timestamping supported: %s\n", HardwareTimestampCapabilities->TaggedTransmit ? "Yes" : "No");
-        printf("Send timestamping: %s\n", HardwareTimestampCapabilities->AllTransmit ? "Yes" : "No");
-        printf("Receive timestamping: %s\n", HardwareTimestampCapabilities->AllReceive ? "Yes" : "No");
+        printf("Timestamping supported: %s\n", HardwareTimestampCapabilities.TaggedTransmit ? "Yes" : "No");
+        printf("Send timestamping: %s\n", HardwareTimestampCapabilities.AllTransmit ? "Yes" : "No");
+        printf("Receive timestamping: %s\n", HardwareTimestampCapabilities.AllReceive ? "Yes" : "No");
     } else {
         printf("Failed to get timestamping capabilities. Error: %lu\n", dwRetVal);
     }
