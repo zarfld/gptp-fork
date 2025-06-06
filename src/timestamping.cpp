@@ -23,7 +23,7 @@
 
 #pragma comment(lib, "Iphlpapi.lib")
 
-DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities) {
+DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES  *TimestampCapabilities) {
     DWORD dwRetVal;
 
     dwRetVal = GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
@@ -38,7 +38,7 @@ DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, MIB_INTER
     return dwRetVal;
 }
 
-DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities) {
+DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES  *TimestampCapabilities) {
     DWORD dwRetVal;
 
     dwRetVal = GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
