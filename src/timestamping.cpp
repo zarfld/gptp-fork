@@ -16,8 +16,8 @@
 
 #ifdef _WIN32
     #include <Windows.h> // Definiert grundlegende Windows-Datentypen und Funktionen
-    #include <Iphlpapi.h> // Definiert Netzwerk- und IP-Hilfsfunktionen und -strukturen
-    #include <iptypes.h>
+    #include <iphlpapi.h> // Definiert Netzwerk- und IP-Hilfsfunktionen und -strukturen
+    #include <IPTypes.h>
     #include <winapifamily.h> // Definiert die Windows-API-Familienpartitionen
     #include <ipifcons.h> // Definiert Netzwerkschnittstellenkonstanten und -typen
 #endif
