@@ -390,6 +390,7 @@ jobs:
         }
         Write-Host "Intel hardware timestamping test completed (errors are expected in CI environment)"
       shell: pwsh
+      continue-on-error: true
 
     - name: Build and run IntegrateIntelHardwareTimestampingWithPacketTimestamping function
       run: |
@@ -410,3 +411,4 @@ jobs:
         }
         Write-Host "Intel hardware timestamping integration test completed (errors are expected in CI environment)"
       shell: pwsh
+      continue-on-error: true
