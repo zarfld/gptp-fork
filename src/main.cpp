@@ -193,28 +193,42 @@ namespace gptp {
 
 #ifdef _WIN32
                 // Check if this interface corresponds to a detected Intel adapter
+                bool found_intel_override = false;
                 for (const auto& intel_adapter : intel_adapters) {
-                    // Match by MAC address or interface name
-                    bool is_intel_interface = false;
+                    // More precise matching: only override if we can reasonably match this interface to the Intel adapter
+                    // For now, since we have 1 Intel controller but multiple interfaces, we'll be conservative
+                    // and only apply override if the Windows API completely failed to detect capabilities
                     
-                    // Try to match by checking if the interface name contains intel adapter info
-                    // This is a simplified heuristic - in a production system you'd want more robust matching
-                    if (working_interface.name.find(intel_adapter.pci_device_id) != std::string::npos ||
-                        intel_adapter.device_name.find("I219") != std::string::npos) {
-                        is_intel_interface = true;
+                    bool should_override = false;
+                    
+                    // Only override if Windows API failed to detect ANY timestamping capabilities
+                    if (!working_interface.capabilities.hardware_timestamping_supported &&
+                        !working_interface.capabilities.software_timestamping_supported &&
+                        !working_interface.capabilities.transmit_timestamping &&
+                        !working_interface.capabilities.receive_timestamping) {
+                        
+                        // Windows API completely failed - apply Intel adapter override
+                        should_override = true;
+                        LOG_INFO("  → Override: Windows API failed, using Intel {} adapter capabilities", 
+                                intel_adapter.controller_family);
+                    } else {
+                        // Windows API provided some capabilities - let's trust it and not override
+                        LOG_INFO("  → Using Windows API capabilities (no override needed)");
                     }
                     
-                    if (is_intel_interface && intel_adapter.supports_hardware_timestamping) {
-                        LOG_INFO("  → Override: Detected Intel {} controller, enabling gPTP capabilities", 
-                                intel_adapter.controller_family);
-                        
+                    if (should_override && intel_adapter.supports_hardware_timestamping) {
                         // Override the capabilities based on Intel adapter detection
                         working_interface.capabilities.hardware_timestamping_supported = true;
                         working_interface.capabilities.software_timestamping_supported = true;
                         working_interface.capabilities.transmit_timestamping = true;
                         working_interface.capabilities.receive_timestamping = true;
+                        found_intel_override = true;
                         break;
                     }
+                }
+                
+                if (!found_intel_override && intel_adapters.size() > 0) {
+                    LOG_INFO("  → No Intel adapter override applied - using native capabilities");
                 }
 #endif
 
@@ -403,13 +417,6 @@ namespace gptp {
                 // - Service stop requests
                 // - Network interface state changes
                 // - Critical errors
-                
-                // For demonstration, we'll run for a reasonable time
-                // Remove this condition in a production daemon
-                if (loop_count > 50) { // Run for ~5 seconds for demo
-                    LOG_INFO("Demo mode: Stopping after 5 seconds of operation");
-                    keep_running = false;
-                }
             }
             
             LOG_INFO("gPTP daemon loop ended gracefully");
