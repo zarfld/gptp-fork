@@ -95,6 +95,43 @@ elseif(ARCH STREQUAL "IntelCE")
   add_definitions(-DARCH_INTELCE)
 endif()
 
+# Add static analysis targets for Linux builds
+if(UNIX)
+  # Find static analysis tools
+  find_program(CPPCHECK_EXECUTABLE cppcheck)
+  find_program(CLANG_TIDY_EXECUTABLE clang-tidy)
+  find_program(VALGRIND_EXECUTABLE valgrind)
+  
+  # Static analysis target
+  if(CPPCHECK_EXECUTABLE)
+    add_custom_target(static-analysis
+      COMMAND ${CPPCHECK_EXECUTABLE} --enable=all --inconclusive --quiet ${CMAKE_SOURCE_DIR}/src
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      COMMENT "Running static code analysis with cppcheck"
+    )
+  else()
+    add_custom_target(static-analysis
+      COMMAND echo "cppcheck not found, skipping static analysis"
+      COMMENT "Static analysis skipped - cppcheck not available"
+    )
+  endif()
+  
+  # Resource management checks target
+  if(VALGRIND_EXECUTABLE)
+    add_custom_target(resource-checks
+      COMMAND ${VALGRIND_EXECUTABLE} --leak-check=full ./gptp
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      COMMENT "Running resource management checks with valgrind"
+      DEPENDS gptp
+    )
+  else()
+    add_custom_target(resource-checks
+      COMMAND echo "valgrind not found, skipping resource checks"
+      COMMENT "Resource checks skipped - valgrind not available"
+    )
+  endif()
+endif()
+
 # Environment variables for Visual Studio 2022
 if(WIN32)
   set(ENV{VSCMD_DEBUG} 3)

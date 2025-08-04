@@ -28,7 +28,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake doxygen graphviz cppcheck clang-tidy
+        sudo apt-get install -y cmake doxygen graphviz cppcheck clang-tidy valgrind
 
     - name: Build project
       run: |
