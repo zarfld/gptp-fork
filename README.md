@@ -1,53 +1,96 @@
-# gptp Daemon
+# Modern gPTP Daemon
 
-This repository contains an example Intel-provided gptp daemon for clock synchronization on Linux and Windows platforms. The daemon communicates with other processes through a named pipe called "gptp-update" and uses a specific message format.
+This repository contains a **modernized** Intel-provided gPTP daemon for clock synchronization on Linux and Windows platforms. The codebase has been significantly refactored to use modern C++17 standards, improved architecture, and best practices.
 
-## Building and Running the gptp Daemon
+> **📋 Note**: This is a modernized fork with substantial improvements in code quality, maintainability, and platform support. See [MODERNIZATION.md](MODERNIZATION.md) for detailed information about the modernization process.
 
-### Linux
+## 🚀 Key Features
 
-#### Build Dependencies
+- **Modern C++17**: Leveraging modern language features and standards
+- **Cross-Platform**: Comprehensive Windows support, Linux-ready architecture
+- **Type-Safe Error Handling**: Modern Result<T> pattern replacing error codes
+- **RAII Memory Management**: Smart pointers and automatic resource cleanup
+- **Modular Architecture**: Clean separation of platform-specific and core logic
+- **Modern Logging**: Structured, thread-safe logging with multiple levels
+- **Configuration Management**: Type-safe configuration with validation
+- **Testing Ready**: Google Test integration for comprehensive testing
 
-* `cmake`: Install using `sudo apt-get install cmake`
-* `doxygen`: Install using `sudo apt-get install doxygen`
-* `graphviz`: Install using `sudo apt-get install graphviz`
+## 🏗️ Architecture
 
-#### Build Instructions
+```
+src/
+├── core/                    # Core gPTP logic and interfaces
+├── platform/                # Platform-specific implementations
+├── networking/              # Network abstraction layer
+├── utils/                   # Utility classes (logging, config)
+└── main.cpp                 # Modern main application
+```
 
-1. Clone the repository from GitHub.
-2. Navigate to the `linux` directory.
-3. Execute the build makefile using the appropriate command:
-   * For I210: `ARCH=I210 make clean all`
-   * For generic Linux: `make clean all`
-   * For Intel CE 5100 Platforms: `ARCH=IntelCE make clean all`
+## Building and Running the gPTP Daemon
 
-#### Run Instructions
+### Prerequisites
 
-To execute the daemon, run `./daemon_cl <interface-name>`, replacing `<interface-name>` with the name of your network interface (e.g., `eth0`).
+#### Windows
+* **Visual Studio 2019 or later** (for C++17 support)
+* **CMake 3.16** or later
+* **Npcap Developer's Pack (Npcap SDK)**: Download from [Npcap Developer's Pack](https://npcap.com/)
+* **Windows 10 or later** (for modern timestamp APIs)
 
-### Windows
+#### Linux (Future Support)
+* **GCC 7+** or **Clang 5+** (for C++17 support)
+* **CMake 3.16** or later
+* **Development packages**: libcap-dev, etc.
 
-#### Build Dependencies
+### Environment Setup
 
-* `Npcap Developer's Pack (Npcap SDK)`: Download from Npcap Developer's Pack
-* `CMAKE 3.2.2` or later
-* `Microsoft Visual Studio 2022` or later
-* Environment variable `NPCAP_DIR` must be defined to the directory where Npcap is installed
-* `Npcap` must also be installed on any machine where the daemon runs
-* `VSCMD_DEBUG` environment variable set to `3` to enable detailed logging for Visual Studio command-line tools
-* `VSCMD_SKIP_SENDTELEMETRY` environment variable set to `1` to disable telemetry data collection by Visual Studio command-line tools
+#### Windows
+```powershell
+# Set required environment variables
+$env:NPCAP_DIR = "C:\path\to\npcap-sdk"
+$env:VSCMD_DEBUG = "3"
+$env:VSCMD_SKIP_SENDTELEMETRY = "1"
+```
 
-#### Build Instructions
+### Build Instructions
 
-1. Clone the repository from GitHub.
-2. Open the project in Microsoft Visual Studio.
-3. Configure the project to use the installed dependencies:
-   * Set the `NPCAP_DIR` environment variable to the directory where Npcap is installed.
-4. Build the project using Microsoft Visual Studio.
+#### Modern CMake Build (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/your-repo/gptp-fork.git
+cd gptp-fork
 
-#### Run Instructions
+# Create build directory
+mkdir build && cd build
 
-To execute the daemon, run `daemon_cl.exe xx-xx-xx-xx-xx-xx`, replacing `xx-xx-xx-xx-xx-xx` with the MAC address of the local interface.
+# Configure with CMake
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# Build
+cmake --build . --config Release
+
+# Optional: Build with tests
+cmake .. -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release
+```
+
+#### Platform-Specific Builds
+
+**Windows:**
+```powershell
+# Using Visual Studio
+cmake .. -G "Visual Studio 17 2022" -A x64
+cmake --build . --config Release
+
+# Or use the provided task
+# Run "Build (Windows)" task in VS Code
+```
+
+**Linux:** (When implemented)
+```bash
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
 
 ### Using Visual Studio Project Files
 
@@ -59,7 +102,125 @@ To execute the daemon, run `daemon_cl.exe xx-xx-xx-xx-xx-xx`, replacing `xx-xx-x
 
 #### Run Instructions
 
-To execute the daemon, run `daemon_cl.exe xx-xx-xx-xx-xx-xx`, replacing `xx-xx-xx-xx-xx-xx` with the MAC address of the local interface.
+### Running the Daemon
+
+#### Basic Usage
+```bash
+# Scan all interfaces and show capabilities
+./gptp
+
+# Use specific interface (when interface selection is implemented)
+./gptp eth0                    # Linux
+./gptp "Local Area Connection" # Windows
+```
+
+#### With Configuration File
+```bash
+# Create configuration file
+cp gptp.conf.example gptp.conf
+# Edit configuration as needed
+./gptp --config gptp.conf
+```
+
+#### Environment Variables
+```bash
+# Set preferred interface
+export GPTP_INTERFACE="eth0"
+export GPTP_LOG_LEVEL="DEBUG"
+export GPTP_HARDWARE_TS="true"
+
+./gptp
+```
+
+## 🧪 Testing
+
+```bash
+# Build with tests enabled
+cmake .. -DBUILD_TESTS=ON
+
+# Run tests  
+ctest --output-on-failure
+
+# Or run directly
+./gptp_tests
+```
+
+## 📋 Configuration
+
+The daemon supports multiple configuration methods:
+
+1. **Configuration File**: `gptp.conf` (see `gptp.conf` for example)
+2. **Environment Variables**: `GPTP_*` prefixed variables
+3. **Command Line**: Future implementation
+
+### Configuration Options
+
+- `preferred_interface`: Network interface to use
+- `log_level`: TRACE, DEBUG, INFO, WARN, ERROR, FATAL
+- `sync_interval_ms`: Sync message interval (default: 125ms)
+- `hardware_timestamping_preferred`: Prefer hardware timestamping
+- And many more (see `gptp.conf`)
+
+## 🔧 Development
+
+### Project Structure
+```
+├── src/
+│   ├── core/           # Core gPTP interfaces
+│   ├── platform/       # Platform implementations  
+│   ├── utils/          # Utilities (logging, config)
+│   └── main.cpp        # Application entry point
+├── tests/              # Unit tests
+├── include/            # Public headers
+└── legacy/             # Original implementation
+```
+
+### Adding Platform Support
+1. Implement `ITimestampProvider` interface
+2. Add platform-specific source to CMakeLists.txt
+3. Update factory in `timestamp_provider.cpp`
+
+## 📖 Documentation
+
+- [MODERNIZATION.md](MODERNIZATION.md) - Detailed modernization information
+- [API Documentation] - Generated with Doxygen (future)
+- [Development Guide] - Contributing guidelines (future)
+
+## 🤝 Contributing
+
+1. Follow modern C++17 standards
+2. Use RAII and smart pointers
+3. Include comprehensive tests
+4. Update documentation
+
+## 📄 License
+
+Same as original Intel gPTP implementation.
+
+## 🔄 Migration from Original
+
+If migrating from the original implementation:
+1. Original code preserved in `legacy/` directory
+2. Configuration syntax updated (see `gptp.conf`)
+3. Command line arguments may differ
+4. Log format modernized
+
+## ⚡ Performance
+
+The modernized version includes:
+- Zero-copy networking operations where possible
+- Efficient memory management with smart pointers
+- Modern compiler optimizations (C++17)
+- Reduced system call overhead
+
+## 🚨 Known Limitations
+
+- Linux implementation not yet complete
+- Full gPTP protocol implementation in progress
+- Service/daemon mode not yet implemented
+- Configuration hot-reload not yet supported
+
+For the complete original implementation, see files in the `legacy/` directory.
 
 ## GitHub Actions CI Pipeline
 
