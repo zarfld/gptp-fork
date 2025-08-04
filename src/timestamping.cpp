@@ -24,6 +24,12 @@
 
 #pragma comment(lib, "Iphlpapi.lib")
 
+#ifdef _WIN32
+// Define the extern variables declared in header
+const char* NPCAP_DIR = std::getenv("NPCAP_DIR");
+const char* VSCMD_DEBUG = std::getenv("VSCMD_DEBUG");
+const char* VSCMD_SKIP_SENDTELEMETRY = std::getenv("VSCMD_SKIP_SENDTELEMETRY");
+
 DWORD GetNetworkInterfaceTimestampCapabilities(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES  *TimestampCapabilities) {
     DWORD dwRetVal;
 
@@ -57,24 +63,7 @@ DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *Interfa
 
     return dwRetVal;
 }
-
-// Ensure that the NPCAP_DIR environment variable is correctly set for Visual Studio 2022
-#ifdef _WIN32
-#include <cstdlib>
-const char* NPCAP_DIR = std::getenv("NPCAP_DIR");
-#endif
-
-// Add the VSCMD_DEBUG environment variable set to 3 to enable detailed logging for Visual Studio command-line tools
-#ifdef _WIN32
-#include <cstdlib>
-const char* VSCMD_DEBUG = std::getenv("VSCMD_DEBUG");
-#endif
-
-// Add the VSCMD_SKIP_SENDTELEMETRY environment variable set to 1 to disable telemetry data collection by Visual Studio command-line tools
-#ifdef _WIN32
-#include <cstdlib>
-const char* VSCMD_SKIP_SENDTELEMETRY = std::getenv("VSCMD_SKIP_SENDTELEMETRY");
-#endif
+#endif // _WIN32
 
 #ifdef _WIN32
 int main(int argc, char* argv[]) {
@@ -97,7 +86,15 @@ int main(int argc, char* argv[]) {
 }
 #else
 int main(int argc, char* argv[]) {
+    printf("GPTP Timestamping Utility\n");
+    printf("=========================\n");
     printf("This program is designed for Windows only.\n");
-    return 1;
+    printf("Linux timestamping functionality would be implemented here.\n");
+    
+    if (argc > 1 && strcmp(argv[1], "IntegrateIntelHardwareTimestampingWithPacketTimestamping") == 0) {
+        printf("\nLinux Intel Hardware Timestamping Integration would be implemented here.\n");
+    }
+    
+    return 0;
 }
 #endif
