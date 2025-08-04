@@ -200,6 +200,29 @@ namespace gptp {
             }
         },
         {
+            "I219",
+            {
+                .controller_family = "I219",
+                .description = "Intel I219 Integrated Ethernet Controller - IEEE 802.1AS/1588 conformance with PCIe-based timestamping",
+                .hardware_timestamping_enabled = true,
+                .software_timestamping_fallback = true,
+                .tagged_transmit_only = false,    // Hardware timestamping support
+                .sync_interval_ms = 125,          // Standard 8 messages/sec
+                .announce_interval_ms = 1000,
+                .pdelay_req_interval_ms = 1000,
+                .tsn_features_enabled = false,    // Basic gPTP support, no advanced TSN
+                .dual_clock_master_support = false,
+                .frame_preemption_support = false,
+                .time_aware_shaper_support = false,
+                .interrupt_coalescing_us = 20,    // Low coalescing for good timing accuracy
+                .rx_ring_size = 256,              // Smaller rings for integrated controller
+                .tx_ring_size = 256,
+                .max_sync_loss_count = 3,         // Tighter tolerance for precision
+                .sync_timeout_ms = 3000,
+                .auto_recovery_enabled = true,
+            }
+        },
+        {
             "E810",
             {
                 .controller_family = "E810",

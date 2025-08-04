@@ -45,6 +45,30 @@ namespace gptp {
         {"1527", "I350"},  // Intel I350 Virtual Function
         {"1528", "I350"},  // Intel I350 Virtual Function
         
+        // I219 Family - Integrated Ethernet Controllers
+        {"0dc7", "I219"},  // Intel I219-LM (22) Gigabit Network Connection
+        {"15b7", "I219"},  // Intel I219-LM Gigabit Network Connection
+        {"15b8", "I219"},  // Intel I219-V2 LM Gigabit Network Connection
+        {"15b9", "I219"},  // Intel I219-LM2 Gigabit Network Connection
+        {"15bb", "I219"},  // Intel I219-V Gigabit Network Connection
+        {"15bc", "I219"},  // Intel I219-LM3 Gigabit Network Connection
+        {"15bd", "I219"},  // Intel I219-V2 Gigabit Network Connection
+        {"15be", "I219"},  // Intel I219-V3 Gigabit Network Connection
+        {"15d6", "I219"},  // Intel I219-LM4 Gigabit Network Connection
+        {"15d7", "I219"},  // Intel I219-V4 Gigabit Network Connection
+        {"15d8", "I219"},  // Intel I219-V5 Gigabit Network Connection
+        {"15e3", "I219"},  // Intel I219-LM6 Gigabit Network Connection
+        {"15e7", "I219"},  // Intel I219-LM7 Gigabit Network Connection
+        {"15e8", "I219"},  // Intel I219-V7 Gigabit Network Connection
+        {"15f4", "I219"},  // Intel I219-LM8 Gigabit Network Connection
+        {"15f5", "I219"},  // Intel I219-V8 Gigabit Network Connection
+        {"15f6", "I219"},  // Intel I219-LM9 Gigabit Network Connection
+        {"15f7", "I219"},  // Intel I219-V9 Gigabit Network Connection
+        {"1a1c", "I219"},  // Intel I219-LM10 Gigabit Network Connection
+        {"1a1d", "I219"},  // Intel I219-V10 Gigabit Network Connection
+        {"1a1e", "I219"},  // Intel I219-LM11 Gigabit Network Connection
+        {"1a1f", "I219"},  // Intel I219-V11 Gigabit Network Connection
+        
         // E810 Family - High Performance Controllers
         {"1593", "E810"},  // Intel E810-CAM2 100Gb 2-port
         {"1594", "E810"},  // Intel E810-CAM1 100Gb 1-port

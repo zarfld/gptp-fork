@@ -40,6 +40,30 @@ namespace gptp {
         {"1527", "I350"},  // Intel I350 Virtual Function
         {"1528", "I350"},  // Intel I350 Virtual Function
         
+        // Intel I219 Family - Integrated Ethernet Controllers
+        {"0DC7", "I219"},  // Intel I219-LM (22) Gigabit Network Connection
+        {"15B7", "I219"},  // Intel I219-LM Gigabit Network Connection
+        {"15B8", "I219"},  // Intel I219-V2 LM Gigabit Network Connection
+        {"15B9", "I219"},  // Intel I219-LM2 Gigabit Network Connection
+        {"15BB", "I219"},  // Intel I219-V Gigabit Network Connection
+        {"15BC", "I219"},  // Intel I219-LM3 Gigabit Network Connection
+        {"15BD", "I219"},  // Intel I219-V2 Gigabit Network Connection
+        {"15BE", "I219"},  // Intel I219-V3 Gigabit Network Connection
+        {"15D6", "I219"},  // Intel I219-LM4 Gigabit Network Connection
+        {"15D7", "I219"},  // Intel I219-V4 Gigabit Network Connection
+        {"15D8", "I219"},  // Intel I219-V5 Gigabit Network Connection
+        {"15E3", "I219"},  // Intel I219-LM6 Gigabit Network Connection
+        {"15E7", "I219"},  // Intel I219-LM7 Gigabit Network Connection
+        {"15E8", "I219"},  // Intel I219-V7 Gigabit Network Connection
+        {"15F4", "I219"},  // Intel I219-LM8 Gigabit Network Connection
+        {"15F5", "I219"},  // Intel I219-V8 Gigabit Network Connection
+        {"15F6", "I219"},  // Intel I219-LM9 Gigabit Network Connection
+        {"15F7", "I219"},  // Intel I219-V9 Gigabit Network Connection
+        {"1A1C", "I219"},  // Intel I219-LM10 Gigabit Network Connection
+        {"1A1D", "I219"},  // Intel I219-V10 Gigabit Network Connection
+        {"1A1E", "I219"},  // Intel I219-LM11 Gigabit Network Connection
+        {"1A1F", "I219"},  // Intel I219-V11 Gigabit Network Connection
+        
         // Intel E810 Family - High Performance Controllers
         {"1593", "E810"},  // Intel E810-CAM2 100Gb 2-port
         {"1594", "E810"},  // Intel E810-CAM1 100Gb 1-port
@@ -135,11 +159,14 @@ namespace gptp {
 
                     // Set capabilities based on controller family
                     if (adapter_info.controller_family == "I210" || 
+                        adapter_info.controller_family == "I219" ||
                         adapter_info.controller_family == "I225" || 
-                        adapter_info.controller_family == "I226") {
+                        adapter_info.controller_family == "I226" ||
+                        adapter_info.controller_family == "I350" ||
+                        adapter_info.controller_family == "E810") {
                         adapter_info.supports_hardware_timestamping = true;
                         adapter_info.supports_ieee_1588 = true;
-                        adapter_info.supports_802_1as = (adapter_info.controller_family != "I210");
+                        adapter_info.supports_802_1as = true; // All these controllers support 802.1AS
                     }
 
                     adapters.push_back(adapter_info);
