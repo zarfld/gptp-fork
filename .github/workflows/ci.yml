@@ -141,11 +141,6 @@ jobs:
         & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
         $env:INCLUDE = "$env:IPHLPAPI_INCLUDE_DIR_WIN;$env:INCLUDE"
         echo "INCLUDE is now: $env:INCLUDE"
-        # Now invoke CMake manually here, reusing this modified shell
-        mkdir build
-        cd build
-        cmake -G "Visual Studio 17 2022" -A x64 ..
-        cmake --build . --config Release
 
     - name: Debug Windows Kits Include directory
       shell: pwsh
@@ -164,10 +159,9 @@ jobs:
 
     - name: Build project
       run: |
-        mkdir build
-        cd build
-        cmake -G "Visual Studio 17 2022" -A x64 ..
-        cmake --build . --config Release
+        Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
+        cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+        cmake --build build --config Release
 
     - name: Run static code analysis
       run: |
@@ -261,10 +255,9 @@ jobs:
 
     - name: Build project
       run: |
-        mkdir build
-        cd build
-        cmake -G "Visual Studio 17 2022" -A x64 ..
-        cmake --build . --config Release
+        Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
+        cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
+        cmake --build build --config Release
 
     - name: Run static code analysis
       run: |
