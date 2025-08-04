@@ -10,8 +10,8 @@
 #include <cstdlib>
 #pragma comment(lib, "Iphlpapi.lib")
 
-DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities);
-DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *InterfaceLuid, MIB_INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities);
+DWORD GetNetworkInterfaceTimestampCapabilities(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities);
+DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES *TimestampCapabilities);
 
 // Ensure that the NPCAP_DIR environment variable is correctly set for Visual Studio 2022
 #ifdef _WIN32

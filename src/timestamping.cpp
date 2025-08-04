@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <cstdint> // Stellt sicher, dass UINT32 definiert ist
+#include <cstring> // For strcmp
 
 #include <cstdlib>
 
@@ -23,10 +24,11 @@
 
 #pragma comment(lib, "Iphlpapi.lib")
 
-DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES  *TimestampCapabilities) {
+DWORD GetNetworkInterfaceTimestampCapabilities(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES  *TimestampCapabilities) {
     DWORD dwRetVal;
 
-    dwRetVal = GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
+    // Call the actual Windows API function using the global scope operator
+    dwRetVal = ::GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
     if (dwRetVal == NO_ERROR) {
         INTERFACE_HARDWARE_TIMESTAMP_CAPABILITIES HardwareTimestampCapabilities = TimestampCapabilities->HardwareCapabilities;
         printf("Timestamping supported: %s\n", HardwareTimestampCapabilities.TaggedTransmit ? "Yes" : "No");
@@ -42,7 +44,7 @@ DWORD GetInterfaceActiveTimestampCapabilities(NET_LUID *InterfaceLuid, INTERFACE
 DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *InterfaceLuid, INTERFACE_TIMESTAMP_CAPABILITIES  *TimestampCapabilities) {
     DWORD dwRetVal;
 
-    dwRetVal = GetInterfaceActiveTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
+    dwRetVal = GetNetworkInterfaceTimestampCapabilities(InterfaceLuid, TimestampCapabilities);
     if (dwRetVal == NO_ERROR) {
         printf("Integrating Intel hardware timestamping with packet timestamping...\n");
         // Add logic to integrate Intel hardware timestamping with packet timestamping
@@ -72,4 +74,30 @@ const char* VSCMD_DEBUG = std::getenv("VSCMD_DEBUG");
 #ifdef _WIN32
 #include <cstdlib>
 const char* VSCMD_SKIP_SENDTELEMETRY = std::getenv("VSCMD_SKIP_SENDTELEMETRY");
+#endif
+
+#ifdef _WIN32
+int main(int argc, char* argv[]) {
+    printf("GPTP Timestamping Utility\n");
+    printf("=========================\n");
+    
+    // Example usage - in a real implementation, you would get the interface LUID from the network interface
+    NET_LUID interfaceLuid = {0};
+    INTERFACE_TIMESTAMP_CAPABILITIES timestampCaps = {0};
+    
+    // For demonstration, we'll try to get the capabilities
+    DWORD result = GetNetworkInterfaceTimestampCapabilities(&interfaceLuid, &timestampCaps);
+    
+    if (argc > 1 && strcmp(argv[1], "IntegrateIntelHardwareTimestampingWithPacketTimestamping") == 0) {
+        printf("\nRunning Intel Hardware Timestamping Integration...\n");
+        result = IntegrateIntelHardwareTimestampingWithPacketTimestamping(&interfaceLuid, &timestampCaps);
+    }
+    
+    return (result == NO_ERROR) ? 0 : 1;
+}
+#else
+int main(int argc, char* argv[]) {
+    printf("This program is designed for Windows only.\n");
+    return 1;
+}
 #endif

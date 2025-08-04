@@ -29,7 +29,31 @@ if(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
   
   set(NPCAP_DIR $ENV{NPCAP_DIR})
-  include_directories(${NPCAP_DIR}/Include)
+  if(NPCAP_DIR AND EXISTS "${NPCAP_DIR}/Include" AND EXISTS "${NPCAP_DIR}/Lib")
+    include_directories(${NPCAP_DIR}/Include)
+    
+    # Use x64 libraries for 64-bit build
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      set(NPCAP_LIB_DIR "${NPCAP_DIR}/Lib/x64")
+    else()
+      set(NPCAP_LIB_DIR "${NPCAP_DIR}/Lib/x86")
+    endif()
+    
+    link_directories(${NPCAP_LIB_DIR})
+    
+    # Check if the actual library files exist (wpcap.lib instead of npcap.lib)
+    if(EXISTS "${NPCAP_LIB_DIR}/wpcap.lib" AND EXISTS "${NPCAP_LIB_DIR}/Packet.lib")
+      set(NPCAP_LIBS wpcap Packet)
+      message(STATUS "Using NPCAP directory: ${NPCAP_DIR}")
+      message(STATUS "Using NPCAP libraries: wpcap, Packet from ${NPCAP_LIB_DIR}")
+    else()
+      set(NPCAP_LIBS)
+      message(WARNING "NPCAP library files not found in ${NPCAP_LIB_DIR}. Building without NPCAP support.")
+    endif()
+  else()
+    set(NPCAP_LIBS)
+    message(WARNING "NPCAP_DIR not set or directory not found. Building without NPCAP support.")
+  endif()
 
   add_executable(gptp ${SOURCES})
   
@@ -55,9 +79,7 @@ if(WIN32)
   message(STATUS "Using Iphlpapi include path: ${IPHLPAPI_INCLUDE_DIR_WIN}")
 
   
-  link_directories(${NPCAP_DIR}/Lib)
-  
-  target_link_libraries(gptp Iphlpapi npcap Packet)
+  target_link_libraries(gptp Iphlpapi ${NPCAP_LIBS})
 else()
   # Linux-specific configurations
   add_executable(gptp ${SOURCES})
