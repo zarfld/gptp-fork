@@ -7,7 +7,7 @@ namespace gptp {
 
     void Configuration::load_defaults() {
         // Defaults are already set in the struct definitions
-        LOG_DEBUG("Configuration loaded with default values");
+        // This method would be used if we needed to set complex defaults
     }
 
     bool Configuration::load_from_file(const std::string& config_file) {

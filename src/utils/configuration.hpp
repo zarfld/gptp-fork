@@ -87,7 +87,7 @@ namespace gptp {
             load_defaults();
         }
 
-        void load_defaults();
+        static void load_defaults();
     };
 
 } // namespace gptp

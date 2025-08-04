@@ -130,7 +130,7 @@ namespace gptp {
             return ErrorCode::SUCCESS;
         }
 
-        void log_timestamp_capabilities(const std::string& interface_name, 
+        static void log_timestamp_capabilities(const std::string& interface_name, 
                                       const TimestampCapabilities& caps) {
             LOG_INFO("Timestamp capabilities for {}:", interface_name);
             LOG_INFO("  Hardware timestamping: {}", caps.hardware_timestamping_supported ? "Yes" : "No");
@@ -145,7 +145,7 @@ namespace gptp {
 
 } // namespace gptp
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* argv[]) {
     using namespace gptp;
 
     // Set up logging

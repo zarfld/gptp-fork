@@ -73,7 +73,7 @@ namespace gptp {
          * @param errno_value Linux errno value
          * @return Corresponding ErrorCode enum value
          */
-        ErrorCode map_linux_error(int errno_value) const;
+        static ErrorCode map_linux_error(int errno_value);
     };
 
 } // namespace gptp

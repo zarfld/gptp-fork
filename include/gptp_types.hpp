@@ -55,8 +55,8 @@ namespace gptp {
     template<typename T>
     class Result {
     public:
-        Result(T value) : value_(std::move(value)), error_(ErrorCode::SUCCESS) {}
-        Result(ErrorCode error) : error_(error) {}
+        explicit Result(T value) : value_(std::move(value)), error_(ErrorCode::SUCCESS) {}
+        explicit Result(ErrorCode error) : error_(error) {}
 
         bool is_success() const noexcept { return error_ == ErrorCode::SUCCESS; }
         bool has_error() const noexcept { return error_ != ErrorCode::SUCCESS; }

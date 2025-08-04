@@ -96,7 +96,7 @@ namespace gptp {
             return ss.str();
         }
 
-        std::string level_to_string(LogLevel level) const {
+        static std::string level_to_string(LogLevel level) {
             switch (level) {
                 case LogLevel::TRACE: return "TRACE";
                 case LogLevel::DEBUG: return "DEBUG";
@@ -117,7 +117,7 @@ namespace gptp {
             return ss.str();
         }
 
-        void format_impl(std::stringstream& ss, const std::string& format) {
+        static void format_impl(std::stringstream& ss, const std::string& format) {
             ss << format;
         }
 
@@ -133,7 +133,7 @@ namespace gptp {
             }
         }
 
-        void output_message(LogLevel level, const std::string& message) {
+        void output_message(LogLevel level, const std::string& message) const {
             // Thread-safe output (cout is thread-safe for individual operations)
             std::cout << "[" << get_timestamp() << "] [" << level_to_string(level) 
                       << "] " << message << std::endl;

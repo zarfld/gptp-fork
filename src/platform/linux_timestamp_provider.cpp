@@ -14,7 +14,12 @@ namespace gptp {
     }
 
     LinuxTimestampProvider::~LinuxTimestampProvider() {
-        cleanup();
+        // Don't call virtual function from destructor - call directly
+        if (socket_fd_ >= 0) {
+            close(socket_fd_);
+            socket_fd_ = -1;
+        }
+        initialized_ = false;
     }
 
     Result<bool> LinuxTimestampProvider::initialize() {
@@ -25,7 +30,7 @@ namespace gptp {
         // Create a socket for ioctl operations
         socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
         if (socket_fd_ < 0) {
-            return map_linux_error(errno);
+            return LinuxTimestampProvider::map_linux_error(errno);
         }
 
         initialized_ = true;
@@ -60,7 +65,7 @@ namespace gptp {
             caps.tagged_transmit = false;
             caps.all_transmit = false;
             caps.all_receive = false;
-            return caps;
+            return Result<TimestampCapabilities>(caps);
         }
         
         // Most Linux systems support software timestamping
@@ -75,7 +80,7 @@ namespace gptp {
         caps.all_transmit = false;
         caps.all_receive = false;
         
-        return caps;
+        return Result<TimestampCapabilities>(caps);
     }
 
     Result<std::vector<NetworkInterface>> LinuxTimestampProvider::get_network_interfaces() {
@@ -85,9 +90,10 @@ namespace gptp {
 
         std::vector<NetworkInterface> interfaces;
         
-        struct ifaddrs *ifaddr, *ifa;
+        struct ifaddrs *ifaddr;
+        const struct ifaddrs *ifa;
         if (getifaddrs(&ifaddr) == -1) {
-            return map_linux_error(errno);
+            return LinuxTimestampProvider::map_linux_error(errno);
         }
 
         // Iterate through linked list of interfaces
@@ -174,7 +180,7 @@ namespace gptp {
         return mac_stream.str();
     }
 
-    ErrorCode LinuxTimestampProvider::map_linux_error(int errno_value) const {
+    ErrorCode LinuxTimestampProvider::map_linux_error(int errno_value) {
         switch (errno_value) {
             case 0:
                 return ErrorCode::SUCCESS;
