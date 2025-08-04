@@ -2,14 +2,18 @@
 #include "utils/logger.hpp"
 #ifdef _WIN32
     #include "platform/windows_adapter_detector.hpp"
+    #include <windows.h>
 #endif
 #ifdef __linux__
     #include "platform/linux_adapter_detector.hpp"
+    #include <signal.h>
 #endif
 #include <vector>
 #include <string>
 #include <memory>
 #include <exception>
+#include <thread>
+#include <chrono>
 
 namespace gptp {
 
