@@ -219,15 +219,29 @@ jobs:
 
     - name: Integrate Intel hardware timestamping
       run: |
-        cd src
-        cl /EHsc timestamping.cpp
-        timestamping.exe
+        Write-Host "Running Intel hardware timestamping integration test..."
+        if (Test-Path "build\Release\gptp.exe") {
+          & "build\Release\gptp.exe"
+        } elseif (Test-Path "build\gptp.exe") {
+          & "build\gptp.exe"
+        } else {
+          Write-Error "gptp.exe not found in build directory"
+          exit 1
+        }
+      shell: pwsh
 
     - name: Build and run IntegrateIntelHardwareTimestampingWithPacketTimestamping function
       run: |
-        cd src
-        cl /EHsc timestamping.cpp
-        timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
+        Write-Host "Running Intel hardware timestamping with packet timestamping integration..."
+        if (Test-Path "build\Release\gptp.exe") {
+          & "build\Release\gptp.exe" IntegrateIntelHardwareTimestampingWithPacketTimestamping
+        } elseif (Test-Path "build\gptp.exe") {
+          & "build\gptp.exe" IntegrateIntelHardwareTimestampingWithPacketTimestamping
+        } else {
+          Write-Error "gptp.exe not found in build directory"
+          exit 1
+        }
+      shell: pwsh
 
   build-windows-x86:
     runs-on: windows-latest
@@ -345,12 +359,26 @@ jobs:
 
     - name: Integrate Intel hardware timestamping
       run: |
-        cd src
-        cl /EHsc timestamping.cpp
-        timestamping.exe
+        Write-Host "Running Intel hardware timestamping integration test..."
+        if (Test-Path "build\Release\gptp.exe") {
+          & "build\Release\gptp.exe"
+        } elseif (Test-Path "build\gptp.exe") {
+          & "build\gptp.exe"
+        } else {
+          Write-Error "gptp.exe not found in build directory"
+          exit 1
+        }
+      shell: pwsh
 
     - name: Build and run IntegrateIntelHardwareTimestampingWithPacketTimestamping function
       run: |
-        cd src
-        cl /EHsc timestamping.cpp
-        timestamping.exe IntegrateIntelHardwareTimestampingWithPacketTimestamping
+        Write-Host "Running Intel hardware timestamping with packet timestamping integration..."
+        if (Test-Path "build\Release\gptp.exe") {
+          & "build\Release\gptp.exe" IntegrateIntelHardwareTimestampingWithPacketTimestamping
+        } elseif (Test-Path "build\gptp.exe") {
+          & "build\gptp.exe" IntegrateIntelHardwareTimestampingWithPacketTimestamping
+        } else {
+          Write-Error "gptp.exe not found in build directory"
+          exit 1
+        }
+      shell: pwsh
