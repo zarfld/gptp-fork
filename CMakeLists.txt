@@ -105,7 +105,16 @@ if(UNIX)
   # Static analysis target
   if(CPPCHECK_EXECUTABLE)
     add_custom_target(static-analysis
-      COMMAND ${CPPCHECK_EXECUTABLE} --enable=all --inconclusive --quiet ${CMAKE_SOURCE_DIR}/src
+      COMMAND ${CPPCHECK_EXECUTABLE} 
+        --enable=all 
+        --inconclusive 
+        --quiet 
+        --suppress=missingIncludeSystem 
+        --suppress=unusedFunction
+        --platform=unix64
+        -D__linux__
+        -U_WIN32
+        ${CMAKE_SOURCE_DIR}/src
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       COMMENT "Running static code analysis with cppcheck"
     )

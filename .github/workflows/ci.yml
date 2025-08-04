@@ -194,7 +194,7 @@ jobs:
         
         if ($cppcheck) {
           Write-Host "Running cppcheck..."
-          & $cppcheck.Source --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
+          & $cppcheck.Source --enable=all --inconclusive --quiet --suppress=missingIncludeSystem --platform=win64 -D_WIN32 -DWIN32 src/
         } else {
           Write-Host "cppcheck not found in PATH, checking common locations..."
           $cppcheckPaths = @(
@@ -207,7 +207,7 @@ jobs:
           foreach ($path in $cppcheckPaths) {
             if (Test-Path $path) {
               Write-Host "Found cppcheck at: $path"
-              & $path --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
+              & $path --enable=all --inconclusive --quiet --suppress=missingIncludeSystem --platform=win64 -D_WIN32 -DWIN32 src/
               $foundCppcheck = $true
               break
             }
@@ -373,7 +373,7 @@ jobs:
         
         if ($cppcheck) {
           Write-Host "Running cppcheck..."
-          & $cppcheck.Source --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
+          & $cppcheck.Source --enable=all --inconclusive --quiet --suppress=missingIncludeSystem --platform=win64 -D_WIN32 -DWIN32 src/
         } else {
           Write-Host "cppcheck not found in PATH, checking common locations..."
           $cppcheckPaths = @(
@@ -386,7 +386,7 @@ jobs:
           foreach ($path in $cppcheckPaths) {
             if (Test-Path $path) {
               Write-Host "Found cppcheck at: $path"
-              & $path --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
+              & $path --enable=all --inconclusive --quiet --suppress=missingIncludeSystem --platform=win64 -D_WIN32 -DWIN32 src/
               $foundCppcheck = $true
               break
             }
