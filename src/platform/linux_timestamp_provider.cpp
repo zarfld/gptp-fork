@@ -2,11 +2,10 @@
 
 #ifdef __linux__
 
+#define _GNU_SOURCE  // Enable GNU extensions for networking
 #include <cstring>
 #include <sstream>
 #include <iomanip>
-#include <net/if.h>
-#include <sys/ioctl.h>
 #include <errno.h>
 
 namespace gptp {
@@ -48,9 +47,21 @@ namespace gptp {
             return ErrorCode::INITIALIZATION_FAILED;
         }
 
-        // For now, return basic capabilities
+        // For now, return basic capabilities based on interface name
         // In a full implementation, this would use ethtool to query actual capabilities
         TimestampCapabilities caps;
+        
+        // Skip loopback interface
+        if (interface_name == "lo") {
+            caps.software_timestamping_supported = false;
+            caps.hardware_timestamping_supported = false;
+            caps.transmit_timestamping = false;
+            caps.receive_timestamping = false;
+            caps.tagged_transmit = false;
+            caps.all_transmit = false;
+            caps.all_receive = false;
+            return caps;
+        }
         
         // Most Linux systems support software timestamping
         caps.software_timestamping_supported = true;
@@ -136,7 +147,13 @@ namespace gptp {
 
         struct ifreq ifr;
         std::memset(&ifr, 0, sizeof(ifr));
+        
+        // Safely copy interface name
+        if (interface_name.length() >= IFNAMSIZ) {
+            return ""; // Interface name too long
+        }
         std::strncpy(ifr.ifr_name, interface_name.c_str(), IFNAMSIZ - 1);
+        ifr.ifr_name[IFNAMSIZ - 1] = '\0'; // Ensure null termination
 
         if (ioctl(socket_fd_, SIOCGIFHWADDR, &ifr) < 0) {
             return "";
@@ -151,7 +168,7 @@ namespace gptp {
                 mac_stream << ":";
             }
             mac_stream << std::hex << std::setw(2) << std::setfill('0') 
-                      << static_cast<int>(mac[i]);
+                      << static_cast<unsigned int>(mac[i]);
         }
         
         return mac_stream.str();

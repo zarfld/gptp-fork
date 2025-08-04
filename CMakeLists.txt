@@ -136,6 +136,13 @@ if(WIN32)
 else()
   # Linux-specific configurations
   add_executable(gptp ${COMMON_SOURCES})
+  
+  # Add Linux-specific definitions
+  target_compile_definitions(gptp PRIVATE 
+    _GNU_SOURCE
+    __STDC_FORMAT_MACROS
+  )
+  
   target_link_libraries(gptp pthread)
   
   # Set Linux-specific properties

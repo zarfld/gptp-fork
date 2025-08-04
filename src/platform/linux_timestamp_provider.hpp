@@ -5,9 +5,8 @@
 #ifdef __linux__
 
 #include <sys/socket.h>
-#include <linux/if.h>
-#include <linux/sockios.h>
-#include <linux/ethtool.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 #include <ifaddrs.h>
 #include <unistd.h>
 
