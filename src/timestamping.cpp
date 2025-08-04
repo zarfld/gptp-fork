@@ -6,12 +6,12 @@
     #ifndef WINAPI_FAMILY
         #define WINAPI_FAMILY WINAPI_FAMILY_DESKTOP_APP
     #endif
+    // Suppress CRT secure warnings for getenv
+    #define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #include <stdio.h>
-#include <cstdint> // Stellt sicher, dass UINT32 definiert ist
 #include <cstring> // For strcmp
-
 #include <cstdlib>
 
 #ifdef _WIN32
@@ -66,7 +66,7 @@ DWORD IntegrateIntelHardwareTimestampingWithPacketTimestamping(NET_LUID *Interfa
 #endif // _WIN32
 
 #ifdef _WIN32
-int main(int argc, char* argv[]) {
+int main(int argc, const char* argv[]) {
     printf("GPTP Timestamping Utility\n");
     printf("=========================\n");
     
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     return (result == NO_ERROR) ? 0 : 1;
 }
 #else
-int main(int argc, char* argv[]) {
+int main(int argc, const char* argv[]) {
     printf("GPTP Timestamping Utility\n");
     printf("=========================\n");
     printf("This program is designed for Windows only.\n");
