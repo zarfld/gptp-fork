@@ -80,9 +80,31 @@ jobs:
         choco install cmake --version=3.2.2
         choco install visualstudio2022community
         choco install npcap
-        choco install cppcheck
+        choco install cppcheck --force
         choco install llvm
         choco install windows-sdk-10.1
+        
+    - name: Verify cppcheck installation
+      run: |
+        Write-Host "Checking cppcheck installation..."
+        $env:PATH += ";C:\ProgramData\chocolatey\bin"
+        $cppcheck = Get-Command cppcheck.exe -ErrorAction SilentlyContinue
+        if ($cppcheck) {
+          Write-Host "cppcheck found at: $($cppcheck.Source)"
+          & $cppcheck.Source --version
+        } else {
+          Write-Host "cppcheck not found in PATH, checking common locations..."
+          @(
+            "C:\ProgramData\chocolatey\bin\cppcheck.exe",
+            "C:\Program Files\Cppcheck\cppcheck.exe",
+            "C:\Program Files (x86)\Cppcheck\cppcheck.exe"
+          ) | ForEach-Object {
+            if (Test-Path $_) {
+              Write-Host "Found cppcheck at: $_"
+              & $_ --version
+            }
+          }
+        }
 
     - name: Debug SDK selection
       run: |
@@ -166,17 +188,32 @@ jobs:
       run: |
         Write-Host "Running static code analysis..."
         
-        # Find and run cppcheck
+        # Add chocolatey to PATH and find cppcheck
+        $env:PATH += ";C:\ProgramData\chocolatey\bin"
         $cppcheck = Get-Command cppcheck.exe -ErrorAction SilentlyContinue
+        
         if ($cppcheck) {
           Write-Host "Running cppcheck..."
           & $cppcheck.Source --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
         } else {
-          Write-Host "cppcheck not found in PATH, trying chocolatey location..."
-          $chocoCppcheck = "C:\ProgramData\chocolatey\bin\cppcheck.exe"
-          if (Test-Path $chocoCppcheck) {
-            & $chocoCppcheck --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
-          } else {
+          Write-Host "cppcheck not found in PATH, checking common locations..."
+          $cppcheckPaths = @(
+            "C:\ProgramData\chocolatey\bin\cppcheck.exe",
+            "C:\Program Files\Cppcheck\cppcheck.exe", 
+            "C:\Program Files (x86)\Cppcheck\cppcheck.exe"
+          )
+          
+          $foundCppcheck = $false
+          foreach ($path in $cppcheckPaths) {
+            if (Test-Path $path) {
+              Write-Host "Found cppcheck at: $path"
+              & $path --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
+              $foundCppcheck = $true
+              break
+            }
+          }
+          
+          if (-not $foundCppcheck) {
             Write-Warning "cppcheck not found - skipping cppcheck analysis"
           }
         }
@@ -330,17 +367,32 @@ jobs:
       run: |
         Write-Host "Running static code analysis..."
         
-        # Find and run cppcheck
+        # Add chocolatey to PATH and find cppcheck
+        $env:PATH += ";C:\ProgramData\chocolatey\bin"
         $cppcheck = Get-Command cppcheck.exe -ErrorAction SilentlyContinue
+        
         if ($cppcheck) {
           Write-Host "Running cppcheck..."
           & $cppcheck.Source --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
         } else {
-          Write-Host "cppcheck not found in PATH, trying chocolatey location..."
-          $chocoCppcheck = "C:\ProgramData\chocolatey\bin\cppcheck.exe"
-          if (Test-Path $chocoCppcheck) {
-            & $chocoCppcheck --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
-          } else {
+          Write-Host "cppcheck not found in PATH, checking common locations..."
+          $cppcheckPaths = @(
+            "C:\ProgramData\chocolatey\bin\cppcheck.exe",
+            "C:\Program Files\Cppcheck\cppcheck.exe", 
+            "C:\Program Files (x86)\Cppcheck\cppcheck.exe"
+          )
+          
+          $foundCppcheck = $false
+          foreach ($path in $cppcheckPaths) {
+            if (Test-Path $path) {
+              Write-Host "Found cppcheck at: $path"
+              & $path --enable=all --inconclusive --quiet --suppress=missingIncludeSystem src/
+              $foundCppcheck = $true
+              break
+            }
+          }
+          
+          if (-not $foundCppcheck) {
             Write-Warning "cppcheck not found - skipping cppcheck analysis"
           }
         }
