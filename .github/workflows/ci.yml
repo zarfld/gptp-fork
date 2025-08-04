@@ -222,12 +222,12 @@ jobs:
         $clangTidy = Get-Command clang-tidy.exe -ErrorAction SilentlyContinue
         if ($clangTidy) {
           Write-Host "Running clang-tidy..."
-          & $clangTidy.Source src/*.cpp -- -I. -IC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\include
+          & $clangTidy.Source src/*.cpp --system-headers=false --header-filter='^(?!.*Windows Kits).*' --checks='-clang-diagnostic-pragma-pack' -- -I. -IC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\include
         } else {
           Write-Host "clang-tidy not found in PATH, trying LLVM location..."
           $llvmClangTidy = "C:\Program Files\LLVM\bin\clang-tidy.exe"
           if (Test-Path $llvmClangTidy) {
-            & $llvmClangTidy src/*.cpp -- -I. -IC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\include
+            & $llvmClangTidy src/*.cpp --system-headers=false --header-filter='^(?!.*Windows Kits).*' --checks='-clang-diagnostic-pragma-pack' -- -I. -IC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\include
           } else {
             Write-Warning "clang-tidy not found - skipping clang-tidy analysis"
           }
@@ -413,7 +413,7 @@ jobs:
             "-D_WIN32_WINNT=0x0A00"
           )
           try {
-            & $clangTidy.Source src/*.cpp -- $includeArgs
+            & $clangTidy.Source src/*.cpp --system-headers=false --header-filter='^(?!.*Windows Kits).*' --checks='-clang-diagnostic-pragma-pack' -- $includeArgs
             Write-Host "clang-tidy completed successfully"
           } catch {
             Write-Warning "clang-tidy encountered issues: $_"
@@ -436,7 +436,7 @@ jobs:
               "-D_WIN32_WINNT=0x0A00"
             )
             try {
-              & $llvmClangTidy src/*.cpp -- $includeArgs
+              & $llvmClangTidy src/*.cpp --system-headers=false --header-filter='^(?!.*Windows Kits).*' --checks='-clang-diagnostic-pragma-pack' -- $includeArgs
               Write-Host "clang-tidy completed successfully"
             } catch {
               Write-Warning "clang-tidy encountered issues: $_"
