@@ -2,7 +2,9 @@
 
 #ifdef __linux__
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE  // Enable GNU extensions for networking
+#endif
 #include <cstring>
 #include <sstream>
 #include <iomanip>
@@ -24,17 +26,17 @@ namespace gptp {
 
     Result<bool> LinuxTimestampProvider::initialize() {
         if (initialized_) {
-            return true;
+            return Result<bool>(true);
         }
 
         // Create a socket for ioctl operations
         socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
         if (socket_fd_ < 0) {
-            return LinuxTimestampProvider::map_linux_error(errno);
+            return Result<bool>(LinuxTimestampProvider::map_linux_error(errno));
         }
 
         initialized_ = true;
-        return true;
+        return Result<bool>(true);
     }
 
     void LinuxTimestampProvider::cleanup() {
@@ -49,7 +51,7 @@ namespace gptp {
         const InterfaceName& interface_name) {
         
         if (!initialized_) {
-            return ErrorCode::INITIALIZATION_FAILED;
+            return Result<TimestampCapabilities>(ErrorCode::INITIALIZATION_FAILED);
         }
 
         // For now, return basic capabilities based on interface name
@@ -85,7 +87,7 @@ namespace gptp {
 
     Result<std::vector<NetworkInterface>> LinuxTimestampProvider::get_network_interfaces() {
         if (!initialized_) {
-            return ErrorCode::INITIALIZATION_FAILED;
+            return Result<std::vector<NetworkInterface>>(ErrorCode::INITIALIZATION_FAILED);
         }
 
         std::vector<NetworkInterface> interfaces;
@@ -93,7 +95,7 @@ namespace gptp {
         struct ifaddrs *ifaddr;
         const struct ifaddrs *ifa;
         if (getifaddrs(&ifaddr) == -1) {
-            return LinuxTimestampProvider::map_linux_error(errno);
+            return Result<std::vector<NetworkInterface>>(LinuxTimestampProvider::map_linux_error(errno));
         }
 
         // Iterate through linked list of interfaces
@@ -114,7 +116,7 @@ namespace gptp {
         }
 
         freeifaddrs(ifaddr);
-        return interfaces;
+        return Result<std::vector<NetworkInterface>>(interfaces);
     }
 
     bool LinuxTimestampProvider::is_hardware_timestamping_available() const {
