@@ -11,7 +11,11 @@ namespace gptp {
     }
 
     WindowsTimestampProvider::~WindowsTimestampProvider() {
-        cleanup();
+        // Don't call virtual function from destructor - cleanup directly
+        if (initialized_) {
+            WSACleanup();
+            initialized_ = false;
+        }
     }
 
     Result<bool> WindowsTimestampProvider::initialize() {
@@ -44,7 +48,7 @@ namespace gptp {
             return Result<TimestampCapabilities>(ErrorCode::INITIALIZATION_FAILED);
         }
 
-        auto luid_result = get_interface_luid(interface_name);
+        auto luid_result = WindowsTimestampProvider::get_interface_luid(interface_name);
         if (luid_result.has_error()) {
             return Result<TimestampCapabilities>(luid_result.error());
         }
@@ -54,10 +58,10 @@ namespace gptp {
 
         DWORD result = GetInterfaceActiveTimestampCapabilities(&interface_luid, &timestamp_caps);
         if (result != NO_ERROR) {
-            return Result<TimestampCapabilities>(map_windows_error(result));
+            return Result<TimestampCapabilities>(WindowsTimestampProvider::map_windows_error(result));
         }
 
-        return Result<TimestampCapabilities>(convert_timestamp_capabilities(timestamp_caps));
+        return Result<TimestampCapabilities>(WindowsTimestampProvider::convert_timestamp_capabilities(timestamp_caps));
     }
 
     Result<std::vector<NetworkInterface>> WindowsTimestampProvider::get_network_interfaces() {
@@ -72,7 +76,7 @@ namespace gptp {
         DWORD result = GetAdaptersInfo(nullptr, &buffer_size);
         
         if (result != ERROR_BUFFER_OVERFLOW) {
-            return Result<std::vector<NetworkInterface>>(map_windows_error(result));
+            return Result<std::vector<NetworkInterface>>(WindowsTimestampProvider::map_windows_error(result));
         }
 
         // Allocate buffer and get adapter info
@@ -81,7 +85,7 @@ namespace gptp {
         
         result = GetAdaptersInfo(adapter_info, &buffer_size);
         if (result != NO_ERROR) {
-            return Result<std::vector<NetworkInterface>>(map_windows_error(result));
+            return Result<std::vector<NetworkInterface>>(WindowsTimestampProvider::map_windows_error(result));
         }
 
         // Convert adapter info to NetworkInterface objects
@@ -130,7 +134,7 @@ namespace gptp {
     }
 
     Result<NET_LUID> WindowsTimestampProvider::get_interface_luid(
-        const InterfaceName& interface_name) const {
+        const InterfaceName& interface_name) {
         
         NET_LUID luid = {0};
         
@@ -146,7 +150,7 @@ namespace gptp {
     }
 
     TimestampCapabilities WindowsTimestampProvider::convert_timestamp_capabilities(
-        const INTERFACE_TIMESTAMP_CAPABILITIES& win_caps) const {
+        const INTERFACE_TIMESTAMP_CAPABILITIES& win_caps) {
         
         TimestampCapabilities caps;
         
@@ -166,7 +170,7 @@ namespace gptp {
         return caps;
     }
 
-    ErrorCode WindowsTimestampProvider::map_windows_error(DWORD error_code) const {
+    ErrorCode WindowsTimestampProvider::map_windows_error(DWORD error_code) {
         switch (error_code) {
             case NO_ERROR:
                 return ErrorCode::SUCCESS;

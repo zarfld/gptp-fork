@@ -69,22 +69,22 @@ namespace gptp {
          * @param interface_name Name of the network interface
          * @return Result containing NET_LUID or error code
          */
-        Result<NET_LUID> get_interface_luid(const InterfaceName& interface_name) const;
+        static Result<NET_LUID> get_interface_luid(const InterfaceName& interface_name);
 
         /**
          * @brief Convert Windows timestamp capabilities to our format
          * @param win_caps Windows INTERFACE_TIMESTAMP_CAPABILITIES
          * @return TimestampCapabilities object
          */
-        TimestampCapabilities convert_timestamp_capabilities(
-            const INTERFACE_TIMESTAMP_CAPABILITIES& win_caps) const;
+        static TimestampCapabilities convert_timestamp_capabilities(
+            const INTERFACE_TIMESTAMP_CAPABILITIES& win_caps);
 
         /**
          * @brief Get detailed error message for Windows error codes
          * @param error_code Windows error code
          * @return Corresponding ErrorCode enum value
          */
-        ErrorCode map_windows_error(DWORD error_code) const;
+        static ErrorCode map_windows_error(DWORD error_code);
     };
 
 } // namespace gptp
