@@ -14,7 +14,7 @@ namespace gptp {
     }
 
     LinuxTimestampProvider::~LinuxTimestampProvider() {
-        // Don't call virtual function from destructor - call directly
+        // Don't call virtual function from destructor - cleanup directly
         if (socket_fd_ >= 0) {
             close(socket_fd_);
             socket_fd_ = -1;
