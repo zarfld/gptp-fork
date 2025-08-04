@@ -33,6 +33,16 @@ namespace gptp {
             timestamp_provider_ = create_timestamp_provider();
             if (!timestamp_provider_) {
                 LOG_FATAL("Failed to create timestamp provider for this platform");
+                LOG_INFO("Supported platforms: Windows (complete), Linux (basic support)");
+                
+#ifdef _WIN32
+                LOG_INFO("Current platform: Windows");
+#elif defined(__linux__)
+                LOG_INFO("Current platform: Linux");
+#else
+                LOG_INFO("Current platform: Unsupported");
+#endif
+                
                 return ErrorCode::INITIALIZATION_FAILED;
             }
 

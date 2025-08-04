@@ -59,10 +59,10 @@ if(WIN32)
 endif()
 
 if(UNIX AND NOT APPLE)
-  # Future Linux sources would go here
-  # list(APPEND COMMON_SOURCES
-  #   src/platform/linux_timestamp_provider.cpp
-  # )
+  # Linux sources
+  list(APPEND COMMON_SOURCES
+    src/platform/linux_timestamp_provider.cpp
+  )
 endif()
 
 # Platform-specific configurations
@@ -172,6 +172,10 @@ if(BUILD_TESTS)
   
   if(WIN32)
     target_sources(gptp_tests PRIVATE src/platform/windows_timestamp_provider.cpp)
+  endif()
+  
+  if(UNIX AND NOT APPLE)
+    target_sources(gptp_tests PRIVATE src/platform/linux_timestamp_provider.cpp)
   endif()
   
   target_include_directories(gptp_tests PRIVATE 

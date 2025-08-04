@@ -1,0 +1,182 @@
+#include "linux_timestamp_provider.hpp"
+
+#ifdef __linux__
+
+#include <cstring>
+#include <sstream>
+#include <iomanip>
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <errno.h>
+
+namespace gptp {
+
+    LinuxTimestampProvider::LinuxTimestampProvider() : initialized_(false), socket_fd_(-1) {
+    }
+
+    LinuxTimestampProvider::~LinuxTimestampProvider() {
+        cleanup();
+    }
+
+    Result<bool> LinuxTimestampProvider::initialize() {
+        if (initialized_) {
+            return true;
+        }
+
+        // Create a socket for ioctl operations
+        socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+        if (socket_fd_ < 0) {
+            return map_linux_error(errno);
+        }
+
+        initialized_ = true;
+        return true;
+    }
+
+    void LinuxTimestampProvider::cleanup() {
+        if (socket_fd_ >= 0) {
+            close(socket_fd_);
+            socket_fd_ = -1;
+        }
+        initialized_ = false;
+    }
+
+    Result<TimestampCapabilities> LinuxTimestampProvider::get_timestamp_capabilities(
+        const InterfaceName& interface_name) {
+        
+        if (!initialized_) {
+            return ErrorCode::INITIALIZATION_FAILED;
+        }
+
+        // For now, return basic capabilities
+        // In a full implementation, this would use ethtool to query actual capabilities
+        TimestampCapabilities caps;
+        
+        // Most Linux systems support software timestamping
+        caps.software_timestamping_supported = true;
+        caps.transmit_timestamping = true;
+        caps.receive_timestamping = true;
+        
+        // Hardware timestamping detection would require ethtool queries
+        // For now, assume it might be available (this is a simplified implementation)
+        caps.hardware_timestamping_supported = false; // Conservative default
+        caps.tagged_transmit = false;
+        caps.all_transmit = false;
+        caps.all_receive = false;
+        
+        return caps;
+    }
+
+    Result<std::vector<NetworkInterface>> LinuxTimestampProvider::get_network_interfaces() {
+        if (!initialized_) {
+            return ErrorCode::INITIALIZATION_FAILED;
+        }
+
+        std::vector<NetworkInterface> interfaces;
+        
+        struct ifaddrs *ifaddr, *ifa;
+        if (getifaddrs(&ifaddr) == -1) {
+            return map_linux_error(errno);
+        }
+
+        // Iterate through linked list of interfaces
+        for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+            if (ifa->ifa_addr == nullptr) {
+                continue;
+            }
+
+            // Only process AF_INET interfaces (IPv4)
+            if (ifa->ifa_addr->sa_family == AF_INET) {
+                NetworkInterface interface = convert_ifaddr_info(*ifa);
+                
+                // Skip loopback interfaces
+                if (interface.name != "lo" && !interface.name.empty()) {
+                    interfaces.push_back(interface);
+                }
+            }
+        }
+
+        freeifaddrs(ifaddr);
+        return interfaces;
+    }
+
+    bool LinuxTimestampProvider::is_hardware_timestamping_available() const {
+        // In a full implementation, this would check for:
+        // 1. Kernel support (SO_TIMESTAMPING)
+        // 2. Driver support (ethtool queries)
+        // 3. Hardware support (NIC capabilities)
+        
+        // For now, return true as most modern Linux systems support it
+        return true;
+    }
+
+    NetworkInterface LinuxTimestampProvider::convert_ifaddr_info(const struct ifaddrs& ifaddr) const {
+        NetworkInterface interface;
+        interface.name = ifaddr.ifa_name;
+        
+        // Get MAC address
+        interface.mac_address = get_interface_mac_address(interface.name);
+        
+        // Check if interface is up
+        interface.is_active = (ifaddr.ifa_flags & IFF_UP) && (ifaddr.ifa_flags & IFF_RUNNING);
+        
+        // Get timestamp capabilities for this interface
+        auto caps_result = const_cast<LinuxTimestampProvider*>(this)->get_timestamp_capabilities(interface.name);
+        if (caps_result.is_success()) {
+            interface.capabilities = caps_result.value();
+        }
+        
+        return interface;
+    }
+
+    std::string LinuxTimestampProvider::get_interface_mac_address(const InterfaceName& interface_name) const {
+        if (socket_fd_ < 0) {
+            return "";
+        }
+
+        struct ifreq ifr;
+        std::memset(&ifr, 0, sizeof(ifr));
+        std::strncpy(ifr.ifr_name, interface_name.c_str(), IFNAMSIZ - 1);
+
+        if (ioctl(socket_fd_, SIOCGIFHWADDR, &ifr) < 0) {
+            return "";
+        }
+
+        // Convert MAC address to string format
+        std::stringstream mac_stream;
+        const unsigned char* mac = reinterpret_cast<const unsigned char*>(ifr.ifr_hwaddr.sa_data);
+        
+        for (int i = 0; i < 6; ++i) {
+            if (i > 0) {
+                mac_stream << ":";
+            }
+            mac_stream << std::hex << std::setw(2) << std::setfill('0') 
+                      << static_cast<int>(mac[i]);
+        }
+        
+        return mac_stream.str();
+    }
+
+    ErrorCode LinuxTimestampProvider::map_linux_error(int errno_value) const {
+        switch (errno_value) {
+            case 0:
+                return ErrorCode::SUCCESS;
+            case ENODEV:
+            case ENXIO:
+                return ErrorCode::INTERFACE_NOT_FOUND;
+            case EOPNOTSUPP:
+            case ENOSYS:
+                return ErrorCode::TIMESTAMPING_NOT_SUPPORTED;
+            case EINVAL:
+                return ErrorCode::INVALID_PARAMETER;
+            case EACCES:
+            case EPERM:
+                return ErrorCode::INSUFFICIENT_PRIVILEGES;
+            default:
+                return ErrorCode::NETWORK_ERROR;
+        }
+    }
+
+} // namespace gptp
+
+#endif // __linux__

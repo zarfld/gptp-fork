@@ -4,9 +4,8 @@
     #include "../platform/windows_timestamp_provider.hpp"
 #endif
 
-// For future Linux implementation
 #ifdef __linux__
-    // #include "../platform/linux_timestamp_provider.hpp"
+    #include "../platform/linux_timestamp_provider.hpp"
 #endif
 
 namespace gptp {
@@ -15,9 +14,7 @@ namespace gptp {
 #ifdef _WIN32
         return std::make_unique<WindowsTimestampProvider>();
 #elif defined(__linux__)
-        // Future Linux implementation
-        // return std::make_unique<LinuxTimestampProvider>();
-        return nullptr; // Placeholder
+        return std::make_unique<LinuxTimestampProvider>();
 #else
         return nullptr; // Unsupported platform
 #endif
