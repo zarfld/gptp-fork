@@ -422,7 +422,7 @@ AnnounceMessage GptpPortManager::build_announce_message(uint8_t domain_number, u
     announce.header.correctionField = 0;
     announce.header.sourcePortIdentity.clockIdentity = local_clock_id_;
     announce.header.sourcePortIdentity.portNumber = port_id;
-    announce.header.sequenceId = 0; // TODO: Maintain sequence counter
+    announce.header.sequenceId = sequence_manager_.get_next_sequence(port_id, protocol::MessageType::ANNOUNCE);
     announce.header.controlField = 5; // Other
     announce.header.logMessageInterval = 0; // 1 second
     
@@ -462,7 +462,7 @@ SyncMessage GptpPortManager::build_sync_message(uint8_t domain_number, uint16_t 
     sync.header.correctionField = 0;
     sync.header.sourcePortIdentity.clockIdentity = local_clock_id_;
     sync.header.sourcePortIdentity.portNumber = port_id;
-    sync.header.sequenceId = 0; // TODO: Maintain sequence counter
+    sync.header.sequenceId = sequence_manager_.get_next_sequence(port_id, protocol::MessageType::SYNC);
     sync.header.controlField = 0; // Sync
     sync.header.logMessageInterval = -3; // 125ms
     

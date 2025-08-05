@@ -8,6 +8,7 @@
 #include "gptp_protocol.hpp"
 #include "bmca.hpp"
 #include "clock_servo.hpp"
+#include "sequence_number_manager.hpp"
 #include <memory>
 #include <chrono>
 #include <functional>
@@ -174,6 +175,9 @@ private:
     ClockIdentity local_clock_id_;
     MessageSender message_sender_;
     RoleChangeCallback role_change_callback_;
+    
+    // IEEE 802.1AS-2021 Section 10.5.7 - Sequence Number Management
+    sequence::SequenceNumberManager sequence_manager_;
     
     // BMCA coordinator (shared across all ports in domain)
     std::map<uint8_t, std::unique_ptr<bmca::BmcaCoordinator>> bmca_coordinators_;

@@ -46,6 +46,7 @@ set(CORE_SOURCES
   src/core/gptp_port_manager.cpp
   src/core/clock_quality_manager.cpp
   src/core/path_delay_calculator.cpp
+  src/core/sequence_number_manager.cpp
 )
 
 set(NETWORKING_SOURCES
