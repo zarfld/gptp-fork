@@ -39,8 +39,8 @@ namespace gptp {
         
     protected:
         void transition_to_state(int new_state);
-        virtual void on_state_entry(int state) {}
-        virtual void on_state_exit(int state) {}
+        virtual void on_state_entry(int /* state */) {}
+        virtual void on_state_exit(int /* state */) {}
         
         std::string name_;
         int current_state_;

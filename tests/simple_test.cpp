@@ -1,6 +1,15 @@
 /**
  * @file simple_test.cpp
- * @brief Simple test for basic IEEE 802.1AS protocol constants
+     // Test basic enums
+    auto msg_type = protocol::MessageType::SYNC;
+    assert(static_cast<uint8_t>(msg_type) == 0x0);
+    
+    auto acc = protocol::ClockAccuracy::WITHIN_1_US;
+    assert(static_cast<uint8_t>(acc) == 0x23);
+    
+    // Suppress unused variable warnings in release builds
+    (void)msg_type;
+    (void)acc;ef Simple test for basic IEEE 802.1AS protocol constants
  */
 
 #include "../include/gptp_protocol.hpp"

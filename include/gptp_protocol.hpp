@@ -166,8 +166,10 @@ namespace gptp {
         
         void from_nanoseconds(std::chrono::nanoseconds ns) {
             auto secs = std::chrono::duration_cast<std::chrono::seconds>(ns);
-            set_seconds(secs.count());
-            nanoseconds = (ns - secs).count();
+            set_seconds(static_cast<uint64_t>(secs.count()));
+            auto remaining_ns = (ns - secs).count();
+            // Ensure nanoseconds is within valid range (0-999,999,999)
+            nanoseconds = static_cast<uint32_t>(remaining_ns % 1000000000ULL);
         }
     } PACKED;
 
@@ -255,7 +257,7 @@ namespace gptp {
             header.messageType = static_cast<uint8_t>(protocol::MessageType::PDELAY_REQ);
             header.messageLength = sizeof(PdelayReqMessage);
             header.controlField = 0x05;
-            std::fill(std::begin(reserved), std::end(reserved), 0);
+            std::fill(std::begin(reserved), std::end(reserved), static_cast<uint8_t>(0));
         }
     } PACKED;
 
