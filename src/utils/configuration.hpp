@@ -22,9 +22,9 @@ namespace gptp {
         struct NetworkConfig {
             std::string preferred_interface;
             bool auto_select_interface = true;
-            int sync_interval_ms = 125;  // 125ms = 8 per second (standard)
-            int announce_interval_ms = 1000;  // 1 second
-            int pdelay_req_interval_ms = 1000;  // 1 second
+            int sync_interval_ms = 125;  // IEEE 802.1AS compliant: 125ms = 8 per second
+            int announce_interval_ms = 1000;  // IEEE 802.1AS compliant: 1 second
+            int pdelay_req_interval_ms = 1000;  // IEEE 802.1AS compliant: 1 second
             bool hardware_timestamping_preferred = true;
             int max_interfaces = 10;
         } network;

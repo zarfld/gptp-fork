@@ -138,7 +138,7 @@ namespace gptp {
                 .hardware_timestamping_enabled = true,
                 .software_timestamping_fallback = true,
                 .tagged_transmit_only = false,    // Can timestamp all packets
-                .sync_interval_ms = 31,           // More aggressive (32 messages/sec)
+                .sync_interval_ms = 125,          // IEEE 802.1AS compliant (8 messages/sec)
                 .announce_interval_ms = 1000,
                 .pdelay_req_interval_ms = 1000,
                 .tsn_features_enabled = true,     // Full TSN support
@@ -161,7 +161,7 @@ namespace gptp {
                 .hardware_timestamping_enabled = true,
                 .software_timestamping_fallback = true,
                 .tagged_transmit_only = false,    // Can timestamp all packets
-                .sync_interval_ms = 31,           // More aggressive (32 messages/sec)
+                .sync_interval_ms = 125,          // IEEE 802.1AS compliant (8 messages/sec)
                 .announce_interval_ms = 1000,
                 .pdelay_req_interval_ms = 1000,
                 .tsn_features_enabled = true,     // Full TSN support
@@ -230,7 +230,7 @@ namespace gptp {
                 .hardware_timestamping_enabled = true,
                 .software_timestamping_fallback = true,
                 .tagged_transmit_only = false,    // Advanced timestamping capabilities
-                .sync_interval_ms = 31,           // High precision (32 messages/sec)
+                .sync_interval_ms = 125,          // IEEE 802.1AS compliant (8 messages/sec)
                 .announce_interval_ms = 1000,
                 .pdelay_req_interval_ms = 1000,
                 .tsn_features_enabled = true,     // Full TSN and advanced features

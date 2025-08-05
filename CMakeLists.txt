@@ -20,6 +20,9 @@ cmake_policy(SET CMP0077 NEW)  # option() honors normal variables
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
+# Add tests subdirectory
+add_subdirectory(tests)
+
 # Optional: include dynamically found iphlpapi.h path from GitHub Actions
 if(DEFINED ENV{IPHLPAPI_INCLUDE_DIR_WIN})
   message(STATUS "Using dynamic Iphlpapi include path: $ENV{IPHLPAPI_INCLUDE_DIR_WIN}")
@@ -281,5 +284,9 @@ if(WIN32)
   set(CMAKE_VS_INCLUDE_DEPLOY_TO_DEFAULT_BUILD 1)
   set(CMAKE_VS_INCLUDE_CLEAN_TO_DEFAULT_BUILD 1)
   set(CMAKE_VS_INCLUDE_REBUILD_TO_DEFAULT_BUILD 1)
+
+# NOTE: Tests temporarily disabled due to CMake configuration conflicts
+# Will be re-enabled after resolving build system issues
+# add_subdirectory(tests ${CMAKE_BINARY_DIR}/test_build)
   set(CMAKE_VS_INCLUDE_BUILD_TO_DEFAULT_BUILD 1)
  endif()

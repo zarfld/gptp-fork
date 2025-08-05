@@ -1,5 +1,6 @@
 #include "core/timestamp_provider.hpp"
 #include "utils/logger.hpp"
+// TODO: Add gPTP protocol includes once naming conflicts are resolved
 #ifdef _WIN32
     #include "platform/windows_adapter_detector.hpp"
     #include "platform/rme_adapter_detector.hpp"
@@ -367,10 +368,30 @@ namespace gptp {
          * @return ErrorCode indicating success or failure
          */
         ErrorCode run_gptp_protocol(const NetworkInterface& interface) {
-            // This would contain the actual gPTP protocol implementation
-            // For now, we'll simulate successful startup
+            // IMMEDIATE ACTIONS PROGRESS:
+            // ✅ 1. Fixed sync intervals to IEEE 802.1AS compliant values (125ms)
+            // ✅ 2. Created proper timestamp structures (gptp_protocol.hpp)
+            // ✅ 3. Created basic message parsing infrastructure (gptp_message_parser.hpp)  
+            // ✅ 4. Created gPTP socket handling framework (gptp_socket.hpp)
+            // ❌ 5. TODO: Implement actual message processing and state machines
             
-            LOG_INFO("    Initializing gPTP protocol for {}", interface.name);
+            LOG_INFO("    Initializing IEEE 802.1AS gPTP protocol for {}", interface.name);
+            
+            // Use IEEE 802.1AS compliant intervals (from protocol constants)
+            constexpr uint32_t sync_interval_ms = 125;      // 125ms (8 per second) - IEEE 802.1AS compliant
+            constexpr uint32_t announce_interval_ms = 1000; // 1000ms - IEEE 802.1AS compliant
+            constexpr uint32_t pdelay_interval_ms = 1000;   // 1000ms - IEEE 802.1AS compliant
+            constexpr int8_t log_sync_interval = -3;        // 2^(-3) = 0.125 seconds
+            constexpr int8_t log_announce_interval = 0;     // 2^0 = 1 second
+            constexpr int8_t log_pdelay_interval = 0;       // 2^0 = 1 second
+            
+            LOG_INFO("    Using IEEE 802.1AS compliant intervals:");
+            LOG_INFO("      Sync interval: {}ms (logSyncInterval = {})", 
+                    sync_interval_ms, log_sync_interval);
+            LOG_INFO("      Announce interval: {}ms (logAnnounceInterval = {})", 
+                    announce_interval_ms, log_announce_interval);
+            LOG_INFO("      Pdelay interval: {}ms (logPdelayReqInterval = {})", 
+                    pdelay_interval_ms, log_pdelay_interval);
             
             // Use the capabilities that were already analyzed (potentially with Intel adapter override)
             const auto& caps = interface.capabilities;
@@ -382,14 +403,17 @@ namespace gptp {
                 LOG_INFO("    Using software timestamping (reduced precision)");
             }
             
-            // Simulate protocol initialization steps
-            LOG_INFO("    gPTP protocol initialized for {}", interface.name);
+            // TODO: Implement actual gPTP protocol logic:
+            // 1. Create gPTP socket for interface
+            // 2. Initialize port identity and clock identity
+            // 3. Start state machines (PortSync, MDSync, LinkDelay, etc.)
+            // 4. Begin periodic message transmission (Sync, Announce, Pdelay_Req)
+            // 5. Start listening for incoming gPTP packets
+            // 6. Implement Best Master Clock Algorithm (BMCA)
+            // 7. Implement time synchronization mathematics (offset calculation, rate adjustment)
             
-            // In a real implementation, this would:
-            // 1. Create gPTP state machines
-            // 2. Configure timing parameters
-            // 3. Start periodic sync/announce/pdelay messages
-            // 4. Begin listening for incoming gPTP packets
+            LOG_INFO("    gPTP protocol framework initialized for {}", interface.name);
+            LOG_WARN("    ⚠️ Note: Actual IEEE 802.1AS protocol implementation is still in progress");
             
             return ErrorCode::SUCCESS;
         }
