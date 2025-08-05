@@ -44,6 +44,7 @@ set(CORE_SOURCES
   src/core/bmca.cpp
   src/core/clock_servo.cpp
   src/core/gptp_port_manager.cpp
+  src/core/clock_quality_manager.cpp
 )
 
 set(NETWORKING_SOURCES

@@ -430,9 +430,19 @@ AnnounceMessage GptpPortManager::build_announce_message(uint8_t domain_number, u
     announce.originTimestamp.set_seconds(0); // Will be set at transmission
     announce.originTimestamp.nanoseconds = 0;
     announce.currentUtcOffset = 37; // Current TAI-UTC offset
-    announce.grandmasterPriority1 = 128; // Default priority
-    announce.grandmasterClockQuality = 0; // TODO: Set proper clock quality
-    announce.grandmasterPriority2 = 128; // Default priority
+    
+    // Get proper clock quality and priorities from clock quality manager
+    // For now, use IEEE 802.1AS compliant defaults - this should be replaced
+    // with actual ClockQualityManager integration
+    announce.grandmasterPriority1 = 248; // IEEE 802.1AS default for end station  
+    announce.grandmasterPriority2 = 248; // IEEE 802.1AS default for end station
+    
+    // Pack ClockQuality according to IEEE 802.1AS format
+    // clockClass=248 (default), clockAccuracy=UNKNOWN(0xFE), offsetScaledLogVariance=0x436A
+    announce.grandmasterClockQuality = (static_cast<uint32_t>(248) << 24) |      // clockClass
+                                      (static_cast<uint32_t>(0xFE) << 16) |      // clockAccuracy 
+                                      static_cast<uint32_t>(0x436A);             // offsetScaledLogVariance
+    
     announce.grandmasterIdentity = local_clock_id_; // We are grandmaster if we're transmitting
     announce.stepsRemoved = 0; // We are the grandmaster
     announce.timeSource = static_cast<uint8_t>(protocol::TimeSource::INTERNAL_OSCILLATOR);

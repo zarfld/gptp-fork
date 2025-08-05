@@ -29,14 +29,25 @@ namespace gptp {
             int max_interfaces = 10;
         } network;
 
-        // Timing configuration
+        // Timing configuration  
         struct TimingConfig {
-            std::chrono::nanoseconds clock_accuracy{100000}; // 100 microseconds
-            std::chrono::nanoseconds offset_scaled_log_variance{0x4E5D}; // Standard value
-            int priority1 = 248;  // Default priority
-            int priority2 = 248;  // Default priority
-            bool grandmaster_capable = false;
-            bool two_step_flag = true;
+            // Clock quality parameters (IEEE 802.1AS compliant)
+            std::string clock_source_type = "ieee802_3_crystal";  // Clock source type
+            bool grandmaster_capable = false;                     // Can be grandmaster
+            uint8_t priority1 = 248;                             // BMCA priority1 (248 = default)
+            uint8_t priority2 = 248;                             // BMCA priority2 (248 = default)
+            
+            // Clock accuracy and stability
+            std::chrono::nanoseconds estimated_accuracy{100000}; // 100µs estimated accuracy
+            uint16_t offset_scaled_log_variance = 0x436A;       // IEEE 802.1AS default variance
+            
+            // External time source configuration
+            bool has_external_time_source = false;             // External reference available
+            bool time_source_traceable = false;                // Traceable to primary standard
+            std::chrono::seconds holdover_capability{0};       // Holdover duration capability
+            
+            // Protocol flags
+            bool two_step_flag = true;                          // Use two-step timestamps
         } timing;
 
         // Logging configuration
