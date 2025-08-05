@@ -35,6 +35,28 @@ if(WIN32)
   target_link_libraries(test_clock_servo ws2_32)
 endif()
 
+# Add Network Integration test
+add_executable(test_network_integration test_network_integration.cpp ../src/core/bmca.cpp ../src/core/clock_servo.cpp)
+target_include_directories(test_network_integration PRIVATE ../include)
+set_property(TARGET test_network_integration PROPERTY CXX_STANDARD 17)
+set_property(TARGET test_network_integration PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# Platform-specific libraries for Network Integration test
+if(WIN32)
+  target_link_libraries(test_network_integration ws2_32)
+endif()
+
+# Add Phase 5 Network Integration Demo
+add_executable(phase5_network_demo phase5_network_integration_demo.cpp ../src/core/bmca.cpp ../src/core/clock_servo.cpp)
+target_include_directories(phase5_network_demo PRIVATE ../include)
+set_property(TARGET phase5_network_demo PROPERTY CXX_STANDARD 17)
+set_property(TARGET phase5_network_demo PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# Platform-specific libraries for Phase 5 demo
+if(WIN32)
+  target_link_libraries(phase5_network_demo ws2_32)
+endif()
+
 # Add Integration test
 add_executable(test_integration test_integration.cpp ../src/core/bmca.cpp ../src/core/clock_servo.cpp)
 target_include_directories(test_integration PRIVATE ../include)
@@ -44,6 +66,17 @@ set_property(TARGET test_integration PROPERTY CXX_STANDARD_REQUIRED ON)
 # Platform-specific libraries for Integration test
 if(WIN32)
   target_link_libraries(test_integration ws2_32)
+endif()
+
+# Add Port Manager test (Network Integration)
+add_executable(test_port_manager test_port_manager.cpp ../src/core/gptp_port_manager.cpp ../src/core/bmca.cpp ../src/core/clock_servo.cpp ../src/core/gptp_state_machines.cpp ../src/core/gptp_clock.cpp)
+target_include_directories(test_port_manager PRIVATE ../include)
+set_property(TARGET test_port_manager PROPERTY CXX_STANDARD 17)
+set_property(TARGET test_port_manager PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# Platform-specific libraries for Port Manager test
+if(WIN32)
+  target_link_libraries(test_port_manager ws2_32)
 endif()
 
 # Add networking test  
