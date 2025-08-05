@@ -20,9 +20,6 @@ cmake_policy(SET CMP0077 NEW)  # option() honors normal variables
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Add tests subdirectory
-add_subdirectory(tests)
-
 # Optional: include dynamically found iphlpapi.h path from GitHub Actions
 if(DEFINED ENV{IPHLPAPI_INCLUDE_DIR_WIN})
   message(STATUS "Using dynamic Iphlpapi include path: $ENV{IPHLPAPI_INCLUDE_DIR_WIN}")
@@ -42,6 +39,8 @@ endif()
 # Source files - now using modern structure
 set(CORE_SOURCES
   src/core/timestamp_provider.cpp
+  src/core/gptp_state_machines.cpp
+  src/core/gptp_clock.cpp
 )
 
 set(UTILS_SOURCES
@@ -285,8 +284,7 @@ if(WIN32)
   set(CMAKE_VS_INCLUDE_CLEAN_TO_DEFAULT_BUILD 1)
   set(CMAKE_VS_INCLUDE_REBUILD_TO_DEFAULT_BUILD 1)
 
-# NOTE: Tests temporarily disabled due to CMake configuration conflicts
-# Will be re-enabled after resolving build system issues
-# add_subdirectory(tests ${CMAKE_BINARY_DIR}/test_build)
+# Add tests subdirectory with unique binary directory
+add_subdirectory(tests ${CMAKE_BINARY_DIR}/test_build)
   set(CMAKE_VS_INCLUDE_BUILD_TO_DEFAULT_BUILD 1)
  endif()
