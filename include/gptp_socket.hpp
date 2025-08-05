@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "gptp_types.hpp"
 #include "gptp_protocol.hpp"
 #include "gptp_message_parser.hpp"
 #include <string>
@@ -22,37 +23,7 @@
 
 namespace gptp {
 
-    /**
-     * @brief Result type for error handling
-     */
-    template<typename T>
-    class Result {
-    public:
-        static Result success(const T& value) {
-            Result result;
-            result.success_ = true;
-            result.value_ = value;
-            return result;
-        }
-
-        static Result error(const std::string& error_message) {
-            Result result;
-            result.success_ = false;
-            result.error_message_ = error_message;
-            return result;
-        }
-
-        bool is_success() const { return success_; }
-        bool is_error() const { return !success_; }
-        
-        const T& value() const { return value_; }
-        const std::string& error() const { return error_message_; }
-
-    private:
-        bool success_ = false;
-        T value_{};
-        std::string error_message_;
-    };
+    // Using Result template from gptp_types.hpp
 
     /**
      * @brief Timestamp information for received/transmitted packets

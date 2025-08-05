@@ -49,7 +49,7 @@ Result<bool> WindowsSocket::initialize(const std::string& interface_name) {
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result != 0) {
-        return Result<bool>::error("Failed to initialize Winsock: " + std::to_string(result));
+        return Result<bool>::error(ErrorCode::INITIALIZATION_FAILED);
     }
 
 #ifdef HAVE_NPCAP

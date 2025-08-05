@@ -32,7 +32,7 @@ std::unique_ptr<IGptpSocket> GptpSocketManager::create_socket(const std::string&
         std::cout << "✅ Windows gPTP socket created successfully" << std::endl;
         return std::move(socket);
     } else {
-        std::cerr << "❌ Failed to initialize Windows socket: " << result.error() << std::endl;
+        std::cerr << "❌ Failed to initialize Windows socket: " << static_cast<int>(result.error()) << std::endl;
         return nullptr;
     }
 #elif defined(__linux__)
@@ -42,7 +42,7 @@ std::unique_ptr<IGptpSocket> GptpSocketManager::create_socket(const std::string&
         std::cout << "✅ Linux gPTP socket created successfully" << std::endl;
         return std::move(socket);
     } else {
-        std::cerr << "❌ Failed to initialize Linux socket: " << result.error() << std::endl;
+        std::cerr << "❌ Failed to initialize Linux socket: " << static_cast<int>(result.error()) << std::endl;
         return nullptr;
     }
 #else
