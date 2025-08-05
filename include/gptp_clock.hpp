@@ -9,6 +9,7 @@
 #pragma once
 
 #include "gptp_protocol.hpp"
+#include "clock_servo.hpp"
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -63,6 +64,11 @@ namespace gptp {
                                const Timestamp& local_receipt_time,
                                std::chrono::nanoseconds path_delay);
         
+        // Servo interface
+        servo::ClockServo* get_servo() const { return servo_.get(); }
+        void adjust_frequency(double ppb_adjustment);
+        void adjust_phase(double nanoseconds_adjustment);
+        
     private:
         ClockIdentity clock_identity_;
         ClockQuality clock_quality_;
@@ -75,6 +81,9 @@ namespace gptp {
         // Local time base
         std::chrono::steady_clock::time_point startup_time_;
         std::chrono::nanoseconds time_offset_;
+        
+        // Clock servo for synchronization
+        std::unique_ptr<servo::ClockServo> servo_;
         
         // Ports
         std::vector<std::shared_ptr<GptpPort>> ports_;

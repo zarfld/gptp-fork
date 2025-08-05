@@ -5,8 +5,15 @@
 
 #include "../../include/gptp_state_machines.hpp"
 #include "../../include/gptp_clock.hpp"
+#include "../../include/clock_servo.hpp"
 #include <iostream>
 #include <cstring>
+
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#endif
 
 namespace gptp {
 
@@ -239,9 +246,27 @@ namespace gptp {
             last_sync_timestamp_ = sync_msg.originTimestamp;
             last_sync_sequence_ = sync_msg.header.sequenceId;
             
-            // Serialize and send (simplified)
+            // Serialize and send via socket
             std::vector<uint8_t> serialized = serialize_sync_message(sync_msg);
-            std::cout << "[" << name_ << "] Sync message prepared (size: " << serialized.size() << " bytes)" << std::endl;
+            
+            if (socket_) {
+                // Create gPTP packet for network transmission
+                GptpPacket packet;
+                packet.ethernet.destination = protocol::GPTP_MULTICAST_MAC;
+                // MAC address would be set from port configuration
+                packet.ethernet.etherType = htons(protocol::GPTP_ETHERTYPE);
+                packet.payload = serialized;
+                
+                PacketTimestamp timestamp;
+                auto result = socket_->send_packet(packet, timestamp);
+                if (result.is_success()) {
+                    std::cout << "[" << name_ << "] Sync message transmitted via network" << std::endl;
+                } else {
+                    std::cout << "[" << name_ << "] Failed to transmit sync message: " << static_cast<int>(result.error()) << std::endl;
+                }
+            } else {
+                std::cout << "[" << name_ << "] Sync message prepared (size: " << serialized.size() << " bytes) - no socket available" << std::endl;
+            }
             
             // Schedule follow-up message transmission
             schedule_followup_transmission();
@@ -393,20 +418,67 @@ namespace gptp {
                       << pdelay_req_sequence_id_ << ")" << std::endl;
             
             // Record transmission timestamp (T1)
-            t1_timestamp_ = Timestamp();  // TODO: Get actual hardware timestamp
+            // In a real implementation, this would be captured from hardware
+            auto now = std::chrono::high_resolution_clock::now();
+            t1_timestamp_.set_seconds(std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count());
+            t1_timestamp_.nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() % 1000000000;
+            
             last_pdelay_req_time_ = last_tick_time_;
             pdelay_req_sequence_id_++;
             
-            // TODO: Implement actual message transmission
+            // Create and send Pdelay_Req message via socket
+            if (socket_) {
+                // Create Pdelay_Req packet using packet builder
+                ClockIdentity clock_id;
+                // TODO: Get from port configuration
+                std::fill(clock_id.id.begin(), clock_id.id.end(), 0x00);
+                
+                PortIdentity port_id;
+                port_id.clockIdentity = clock_id;
+                port_id.portNumber = htons(1);
+                
+                std::array<uint8_t, 6> mac_addr = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
+                // TODO: Get actual MAC from socket
+                
+                auto packet = GptpPacketBuilder::create_pdelay_req_packet(
+                    port_id, pdelay_req_sequence_id_, mac_addr);
+                
+                PacketTimestamp timestamp;
+                auto result = socket_->send_packet(packet, timestamp);
+                if (result.is_success()) {
+                    // Update T1 with actual transmission timestamp
+                    auto tx_ns = timestamp.hardware_timestamp;
+                    t1_timestamp_.set_seconds(tx_ns.count() / 1000000000);
+                    t1_timestamp_.nanoseconds = tx_ns.count() % 1000000000;
+                    
+                    std::cout << "[" << name_ << "] Pdelay_Req transmitted via network" << std::endl;
+                } else {
+                    std::cout << "[" << name_ << "] Failed to transmit Pdelay_Req: " << static_cast<int>(result.error()) << std::endl;
+                }
+            } else {
+                std::cout << "[" << name_ << "] Pdelay_Req prepared - no socket available" << std::endl;
+            }
+            
+            std::cout << "[" << name_ << "] T1 timestamp: " << t1_timestamp_.get_seconds() 
+                      << "." << t1_timestamp_.nanoseconds << std::endl;
         }
 
         void LinkDelayStateMachine::process_pdelay_resp(const PdelayRespMessage& resp) {
             std::cout << "[" << name_ << "] Processing Pdelay_Resp" << std::endl;
             
             // Record reception timestamp (T4)
-            t4_timestamp_ = Timestamp();  // TODO: Get actual hardware timestamp
+            // In a real implementation, this would be captured from hardware
+            auto now = std::chrono::high_resolution_clock::now();
+            t4_timestamp_.set_seconds(std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count());
+            t4_timestamp_.nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() % 1000000000;
             
-            // TODO: Store T2 timestamp from response message
+            // Extract T2 timestamp from response message  
+            t2_timestamp_ = resp.requestReceiptTimestamp;
+            
+            std::cout << "[" << name_ << "] T2 from resp: " << t2_timestamp_.get_seconds()
+                      << "." << t2_timestamp_.nanoseconds << std::endl;
+            std::cout << "[" << name_ << "] T4 timestamp: " << t4_timestamp_.get_seconds() 
+                      << "." << t4_timestamp_.nanoseconds << std::endl;
         }
 
         void LinkDelayStateMachine::process_pdelay_resp_follow_up(const PdelayRespFollowUpMessage& follow_up) {
@@ -414,15 +486,11 @@ namespace gptp {
             
             // Create timestamps structure for path delay calculation using IEEE 802.1AS equations
             Timestamp t1 = t1_timestamp_;  // Stored from send_pdelay_req
+            Timestamp t2 = t2_timestamp_;  // Stored from process_pdelay_resp
             Timestamp t4 = t4_timestamp_;  // Stored from process_pdelay_resp
             
             // Extract T3 from the follow-up message (precise transmission timestamp)
             Timestamp t3 = follow_up.responseOriginTimestamp;
-            
-            // TODO: Get T2 from the stored Pdelay_Resp message
-            // For now, estimate T2 based on T3 and processing delay
-            Timestamp t2 = t3;
-            t2.nanoseconds -= 1000;  // Assume 1µs processing delay
             
             // Calculate path delay using IEEE 802.1AS-2021 equations
             // Equation 16-2: meanLinkDelay = ((t_req4 - t_req1) * r - (t_rsp3 - t_rsp2)) / 2
@@ -597,7 +665,11 @@ namespace gptp {
             sync_receipt_time_ = receipt_time;
             waiting_for_follow_up_ = true;
             
-            // TODO: Implement clock synchronization logic
+            // Check if this is a one-step sync (no follow-up expected)
+            if ((sync.header.flags & 0x0200) == 0) { // twoStep flag not set
+                waiting_for_follow_up_ = false;
+                perform_clock_synchronization(sync, receipt_time, sync.originTimestamp);
+            }
         }
 
         void SiteSyncSyncStateMachine::process_follow_up_message(const FollowUpMessage& follow_up) {
@@ -609,10 +681,55 @@ namespace gptp {
                 
                 waiting_for_follow_up_ = false;
                 
-                // TODO: Perform time synchronization calculation
-                // Use follow_up.preciseOriginTimestamp and sync_receipt_time_
+                // Perform two-step synchronization using precise timestamp from follow-up
+                perform_clock_synchronization(pending_sync_, sync_receipt_time_, 
+                                            follow_up.preciseOriginTimestamp);
                 
                 std::cout << "[" << name_ << "] Clock synchronization updated" << std::endl;
+            }
+        }
+
+        void SiteSyncSyncStateMachine::perform_clock_synchronization(const SyncMessage& sync,
+                                                                   const Timestamp& receipt_time,
+                                                                   const Timestamp& precise_origin) {
+            // Create measurement for clock servo
+            servo::SyncMeasurement measurement;
+            measurement.master_timestamp = precise_origin;
+            measurement.local_receipt_time = receipt_time;
+            measurement.correction_field = Timestamp(); // Will be extracted from sync.header.correctionField
+            
+            // Convert correctionField (nanoseconds << 16) to timestamp
+            int64_t correction_ns = sync.header.correctionField >> 16;
+            measurement.correction_field.nanoseconds = static_cast<uint32_t>(correction_ns % 1000000000);
+            measurement.correction_field.set_seconds(correction_ns / 1000000000);
+            
+            // Get path delay from port's LinkDelay state machine
+            measurement.path_delay = port_->get_link_delay();
+            measurement.measurement_time = std::chrono::steady_clock::now();
+            
+            // Get the clock servo from the port and update it
+            if (auto* clock = port_->get_clock()) {
+                auto* servo = clock->get_servo();
+                if (servo) {
+                    auto offset_result = servo->calculate_offset(measurement);
+                    if (offset_result.valid) {
+                        auto freq_result = servo->update_servo(offset_result.offset, 
+                                                              measurement.measurement_time);
+                        
+                        std::cout << "[" << name_ << "] Sync complete - Offset: " 
+                                  << offset_result.offset.count() << " ns, "
+                                  << "Freq adj: " << freq_result.frequency_adjustment << " ppb, "
+                                  << "Locked: " << (freq_result.locked ? "Yes" : "No") << std::endl;
+                        
+                        // Apply frequency adjustment to local clock
+                        clock->adjust_frequency(freq_result.frequency_adjustment);
+                        
+                        // Apply phase adjustment if needed
+                        if (std::abs(freq_result.phase_adjustment) > 1000.0) { // > 1µs
+                            clock->adjust_phase(freq_result.phase_adjustment);
+                        }
+                    }
+                }
             }
         }
 
@@ -644,7 +761,15 @@ namespace gptp {
         , enabled_(false)
     {
         port_identity_.portNumber = port_number;
-        // TODO: Set clock identity from clock
+        
+        // Set clock identity from clock if available
+        if (clock_) {
+            port_identity_.clockIdentity = clock_->get_clock_identity();
+        } else {
+            // Generate temporary clock identity if no clock provided
+            std::fill(std::begin(port_identity_.clockIdentity.id), 
+                     std::end(port_identity_.clockIdentity.id), 0);
+        }
         
         // Create state machines
         port_sync_sm_ = std::make_unique<state_machine::PortSyncStateMachine>(this);
@@ -713,8 +838,39 @@ namespace gptp {
     }
 
     void GptpPort::process_pdelay_req_message(const PdelayReqMessage& req, const Timestamp& receipt_time) {
-        std::cout << "[Port " << port_identity_.portNumber << "] Processing Pdelay_Req" << std::endl;
-        // TODO: Send Pdelay_Resp
+        std::cout << "[Port " << port_identity_.portNumber << "] Processing Pdelay_Req (seq: " 
+                  << req.header.sequenceId << ")" << std::endl;
+        
+        // Create Pdelay_Resp message
+        PdelayRespMessage resp;
+        resp.header.messageType = static_cast<uint8_t>(protocol::MessageType::PDELAY_RESP);
+        resp.header.transportSpecific = 1; // IEEE 802.1AS
+        resp.header.versionPTP = 2;
+        resp.header.messageLength = sizeof(PdelayRespMessage);
+        resp.header.domainNumber = 0; // gPTP domain 0
+        resp.header.flags = 0x0008; // twoStep flag set
+        resp.header.correctionField = 0;
+        resp.header.sequenceId = req.header.sequenceId; // Echo sequence ID
+        resp.header.controlField = 0x03; // Pdelay_Resp
+        resp.header.logMessageInterval = 0; // Not applicable
+        
+        // Set source port identity
+        resp.header.sourcePortIdentity = port_identity_;
+        
+        // Set T2 timestamp (request receipt time)
+        resp.requestReceiptTimestamp = receipt_time;
+        
+        // Set requesting port identity (from the request)
+        resp.requestingPortIdentity = req.header.sourcePortIdentity;
+        
+        std::cout << "[Port " << port_identity_.portNumber << "] Sending Pdelay_Resp (T2: " 
+                  << receipt_time.get_seconds() << "." << receipt_time.nanoseconds << ")" << std::endl;
+        
+        // This would be sent via socket layer when available
+        // For now, just log the response creation
+        
+        // In a two-step implementation, a follow-up message would also be sent
+        // with the precise transmission timestamp (T3)
     }
 
     void GptpPort::process_pdelay_resp_message(const PdelayRespMessage& resp, const Timestamp& receipt_time) {
@@ -727,7 +883,28 @@ namespace gptp {
 
     void GptpPort::process_announce_message(const AnnounceMessage& announce) {
         std::cout << "[Port " << port_identity_.portNumber << "] Processing Announce message" << std::endl;
-        // TODO: Implement BMCA processing
+        
+        // Forward to port manager or BMCA coordinator for best master selection
+        // The announce message contains priority vectors and clock quality information
+        // needed for IEEE 802.1AS-2021 BMCA algorithm
+        
+        std::cout << "[Port " << port_identity_.portNumber << "] Announce from GM: "
+                  << std::hex << announce.grandmasterIdentity.id[0] << ":"
+                  << announce.grandmasterIdentity.id[1] << ":" 
+                  << announce.grandmasterIdentity.id[2] << ":" 
+                  << announce.grandmasterIdentity.id[3] << ":" 
+                  << announce.grandmasterIdentity.id[4] << ":" 
+                  << announce.grandmasterIdentity.id[5] << ":" 
+                  << announce.grandmasterIdentity.id[6] << ":" 
+                  << announce.grandmasterIdentity.id[7] << std::dec << std::endl;
+        
+        std::cout << "[Port " << port_identity_.portNumber << "] GM Priority1: " 
+                  << static_cast<int>(announce.grandmasterPriority1)
+                  << ", Priority2: " << static_cast<int>(announce.grandmasterPriority2)
+                  << ", Steps: " << announce.stepsRemoved << std::endl;
+        
+        // This would normally trigger BMCA state machine evaluation
+        // and potentially change port role (MASTER/SLAVE/PASSIVE)
     }
 
     std::chrono::nanoseconds GptpPort::get_link_delay() const {

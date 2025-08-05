@@ -7,7 +7,12 @@ set_property(TARGET simple_test PROPERTY CXX_STANDARD 17)
 set_property(TARGET simple_test PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # Add State Machine Test
-add_executable(test_state_machines test_state_machines.cpp ../src/core/gptp_state_machines.cpp ../src/core/gptp_clock.cpp ../src/core/path_delay_calculator.cpp)
+add_executable(test_state_machines test_state_machines.cpp 
+    ../src/core/gptp_state_machines.cpp 
+    ../src/core/gptp_clock.cpp 
+    ../src/core/path_delay_calculator.cpp
+    ../src/core/clock_servo.cpp
+    ../src/networking/packet_builder.cpp)
 target_include_directories(test_state_machines PRIVATE ../include)
 set_property(TARGET test_state_machines PROPERTY CXX_STANDARD 17)
 set_property(TARGET test_state_machines PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -35,6 +40,7 @@ set_property(TARGET test_message_serialization PROPERTY CXX_STANDARD_REQUIRED ON
 if(WIN32)
   target_link_libraries(test_bmca ws2_32)
   target_link_libraries(test_message_serialization ws2_32)
+  target_link_libraries(test_state_machines ws2_32)
 endif()
 
 # On Linux, might need to link pthread for some tests

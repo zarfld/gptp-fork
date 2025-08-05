@@ -226,6 +226,11 @@ private:
     void transmit_sync_message(uint16_t port_id);
     
     /**
+     * @brief Transmit follow-up message from a port
+     */
+    void transmit_followup_message(uint16_t port_id, uint16_t sequence_id);
+    
+    /**
      * @brief Build announce message for transmission
      */
     AnnounceMessage build_announce_message(uint8_t domain_number, uint16_t port_id);

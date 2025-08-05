@@ -196,8 +196,12 @@ void GptpPortManager::process_followup_message(uint16_t port_id, const FollowUpM
     sync_manager->set_slave_port(port_id);
     
     // Process sync/follow-up pair for synchronization
-    // TODO: Get actual path delay from LinkDelay state machine
+    // Get actual path delay from LinkDelay state machine
     std::chrono::nanoseconds path_delay(0);
+    
+    if (port_info.gptp_port) {
+        path_delay = port_info.gptp_port->get_link_delay();
+    }
     
     sync_manager->process_sync_followup(port_id, 
                                        pending.sync_message,
@@ -408,7 +412,44 @@ void GptpPortManager::transmit_sync_message(uint16_t port_id) {
     
     message_sender_(port_id, serialized);
     
-    // TODO: Send corresponding follow-up message with precise timestamp
+    // Send corresponding follow-up message with precise timestamp
+    transmit_followup_message(port_id, sync.header.sequenceId);
+}
+
+void GptpPortManager::transmit_followup_message(uint16_t port_id, uint16_t sequence_id) {
+    auto port_it = ports_.find(port_id);
+    if (port_it == ports_.end()) {
+        return;
+    }
+    
+    uint8_t domain = port_it->second.domain_number;
+    
+    // Build follow-up message
+    FollowUpMessage followup;
+    followup.header.messageType = static_cast<uint8_t>(protocol::MessageType::FOLLOW_UP);
+    followup.header.versionPTP = 2;
+    followup.header.messageLength = sizeof(FollowUpMessage);
+    followup.header.domainNumber = domain;
+    followup.header.flags = 0;
+    followup.header.correctionField = 0;
+    followup.header.sourcePortIdentity.clockIdentity = local_clock_id_;
+    followup.header.sourcePortIdentity.portNumber = port_id;
+    followup.header.sequenceId = sequence_id;  // Same as corresponding sync
+    followup.header.controlField = 0x02; // Follow_Up
+    followup.header.logMessageInterval = -3; // Same as sync
+    
+    // Set precise origin timestamp (would be captured from hardware in real implementation)
+    auto now = std::chrono::high_resolution_clock::now();
+    auto ns_since_epoch = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
+    followup.preciseOriginTimestamp.set_seconds(ns_since_epoch.count() / 1000000000ULL);
+    followup.preciseOriginTimestamp.nanoseconds = ns_since_epoch.count() % 1000000000ULL;
+    
+    auto serialized = serialize_message(followup);
+    
+    std::cout << "Transmitting follow-up message from port " << port_id 
+              << " (sequence " << sequence_id << ")" << std::endl;
+    
+    message_sender_(port_id, serialized);
 }
 
 AnnounceMessage GptpPortManager::build_announce_message(uint8_t domain_number, uint16_t port_id) {

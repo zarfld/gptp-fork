@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "gptp_types.hpp"
 #include "gptp_protocol.hpp"
 #include <vector>
 #include <cstring>
@@ -23,34 +24,7 @@
     #define PACKED_MSG __attribute__((packed))
 #endif
 
-#if __cplusplus >= 201703L
-    #include <optional>
-    #define GPTP_OPTIONAL std::optional
-#else
-    // Use the same optional implementation as in gptp_types.hpp
-    template<typename T>
-    class optional {
-    public:
-        optional() : has_value_(false) {}
-        optional(const T& value) : value_(value), has_value_(true) {}
-        optional(T&& value) : value_(std::move(value)), has_value_(true) {}
-        
-        bool has_value() const noexcept { return has_value_; }
-        const T& value() const { 
-            if (!has_value_) throw std::runtime_error("bad optional access");
-            return value_; 
-        }
-        T& value() { 
-            if (!has_value_) throw std::runtime_error("bad optional access");
-            return value_; 
-        }
-        
-    private:
-        T value_;
-        bool has_value_;
-    };
-    #define GPTP_OPTIONAL optional
-#endif
+// Use the optional implementation from gptp_types.hpp
 
 namespace gptp {
 

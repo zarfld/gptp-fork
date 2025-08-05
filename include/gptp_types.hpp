@@ -37,7 +37,6 @@
 namespace gptp {
 
     // Modern type aliases for better readability
-    using Timestamp = std::chrono::nanoseconds;
     using MacAddress = std::string;
     using InterfaceName = std::string;
     
@@ -57,6 +56,30 @@ namespace gptp {
     public:
         explicit Result(T value) : value_(std::move(value)), error_(ErrorCode::SUCCESS) {}
         explicit Result(ErrorCode error) : error_(error) {}
+
+        // Static factory methods
+        static Result<T> success(T value) {
+            return Result<T>(std::move(value));
+        }
+        
+        static Result<T> error(ErrorCode error_code) {
+            return Result<T>(error_code);
+        }
+        
+        // Support string-based errors for compatibility
+        static Result<T> error(const std::string& error_message) {
+            // Map common error messages to ErrorCode
+            if (error_message.find("not found") != std::string::npos || 
+                error_message.find("not initialized") != std::string::npos) {
+                return Result<T>(ErrorCode::INTERFACE_NOT_FOUND);
+            } else if (error_message.find("Failed") != std::string::npos || 
+                       error_message.find("Error") != std::string::npos) {
+                return Result<T>(ErrorCode::NETWORK_ERROR);
+            } else if (error_message.find("Timeout") != std::string::npos) {
+                return Result<T>(ErrorCode::NETWORK_ERROR);
+            }
+            return Result<T>(ErrorCode::NETWORK_ERROR);  // Default fallback
+        }
 
         bool is_success() const noexcept { return error_ == ErrorCode::SUCCESS; }
         bool has_error() const noexcept { return error_ != ErrorCode::SUCCESS; }

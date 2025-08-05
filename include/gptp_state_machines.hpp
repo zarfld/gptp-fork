@@ -12,6 +12,8 @@
 #pragma once
 
 #include "path_delay_calculator.hpp"
+#include "clock_servo.hpp"
+#include "gptp_socket.hpp"
 #include <chrono>
 #include <memory>
 #include <string>
@@ -126,6 +128,9 @@ namespace gptp {
             void tx_md_sync();
             void set_md_sync_receive();
             
+            // Socket integration for network transmission
+            void set_socket(std::shared_ptr<IGptpSocket> socket) { socket_ = socket; }
+            
         private:
             void on_state_entry(int state) override;
             void on_state_exit(int state) override;
@@ -136,6 +141,7 @@ namespace gptp {
             void schedule_followup_transmission();
             
             GptpPort* port_;
+            std::shared_ptr<IGptpSocket> socket_;  // Network socket for message transmission
             std::chrono::nanoseconds follow_up_receipt_timeout_;
             std::chrono::nanoseconds last_md_sync_time_;
             bool waiting_for_follow_up_;
@@ -189,6 +195,9 @@ namespace gptp {
             std::chrono::nanoseconds get_link_delay() const { return link_delay_; }
             double get_neighbor_rate_ratio() const { return neighbor_rate_ratio_; }
             
+            // Socket integration for network transmission
+            void set_socket(std::shared_ptr<IGptpSocket> socket) { socket_ = socket; }
+            
         private:
             void on_state_entry(int state) override;
             void on_state_exit(int state) override;
@@ -198,6 +207,7 @@ namespace gptp {
             void process_pdelay_resp_follow_up(const PdelayRespFollowUpMessage& follow_up);
             
             GptpPort* port_;
+            std::shared_ptr<IGptpSocket> socket_;  // Network socket for message transmission
             std::chrono::nanoseconds pdelay_req_interval_;
             std::chrono::nanoseconds pdelay_resp_receipt_timeout_;
             std::chrono::nanoseconds last_pdelay_req_time_;
@@ -209,6 +219,7 @@ namespace gptp {
             
             // Temporary storage for delay calculation
             Timestamp t1_timestamp_;  // Pdelay_Req TX time
+            Timestamp t2_timestamp_;  // Pdelay_Req RX time (from response)
             Timestamp t4_timestamp_;  // Pdelay_Resp RX time
             uint16_t pdelay_req_sequence_id_;
         };
@@ -245,6 +256,11 @@ namespace gptp {
         private:
             void on_state_entry(int state) override;
             void on_state_exit(int state) override;
+            
+            // Clock synchronization implementation
+            void perform_clock_synchronization(const SyncMessage& sync,
+                                             const Timestamp& receipt_time,
+                                             const Timestamp& precise_origin);
             
             GptpPort* port_;
             
