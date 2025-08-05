@@ -56,6 +56,7 @@ if(WIN32)
   list(APPEND COMMON_SOURCES
     src/platform/windows_timestamp_provider.cpp
     src/platform/windows_adapter_detector.cpp
+    src/platform/rme_adapter_detector.cpp
   )
 endif()
 

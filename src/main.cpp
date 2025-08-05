@@ -2,6 +2,7 @@
 #include "utils/logger.hpp"
 #ifdef _WIN32
     #include "platform/windows_adapter_detector.hpp"
+    #include "platform/rme_adapter_detector.hpp"
     #include <windows.h>
 #endif
 #ifdef __linux__
@@ -16,6 +17,9 @@
 #include <chrono>
 
 namespace gptp {
+
+    // Global shutdown flag for signal handling
+    static volatile bool g_shutdown_requested = false;
 
     /**
      * @brief Modern gPTP application class with RAII and proper error handling
@@ -170,6 +174,48 @@ namespace gptp {
                 }
                 intel_detector.cleanup();
             }
+
+            // Detect RME audio interfaces for potential gPTP support
+            RmeAdapterDetector rme_detector;
+            if (rme_detector.initialize() == ErrorCode::SUCCESS) {
+                auto rme_adapters_result = rme_detector.detect_rme_adapters();
+                if (rme_adapters_result.is_success()) {
+                    const auto& rme_adapters = rme_adapters_result.value();
+                    
+                    if (!rme_adapters.empty()) {
+                        LOG_INFO("Found {} RME Audio interface(s)", rme_adapters.size());
+                        
+                        for (const auto& rme_adapter : rme_adapters) {
+                            LOG_INFO("RME Controller: {} (Family: {})", 
+                                    rme_adapter.device_name, 
+                                    rme_adapter.family == RmeProductFamily::MADIFACE_USB ? "MADIface USB" : "Unknown");
+                            LOG_INFO("  USB ID: {:04X}:{:04X}", 
+                                    rme_adapter.usb_vendor_id, rme_adapter.usb_product_id);
+                            LOG_INFO("  Device: {}", rme_adapter.device_description);
+                            LOG_INFO("  Professional audio channels: {}", rme_adapter.profile.max_channels);
+                            LOG_INFO("  SteadyClock technology: {}", 
+                                    rme_adapter.profile.has_steadyclock_technology ? "Yes" : "No");
+                            LOG_INFO("  Word Clock support: {}", 
+                                    rme_adapter.profile.supports_word_clock ? "Yes" : "No");
+                            LOG_INFO("  Potential gPTP support: {}", 
+                                    rme_adapter.potentially_supports_gptp ? "Yes" : "Unknown");
+                            LOG_INFO("  Assessment: {}", rme_adapter.gptp_assessment);
+                            
+                            if (rme_adapter.potentially_supports_gptp) {
+                                LOG_WARN("⚠️  RME gPTP support requires official specification verification!");
+                                LOG_INFO("📞 Recommendations:");
+                                auto recommendations = get_rme_implementation_recommendations();
+                                for (const auto& rec : recommendations) {
+                                    LOG_INFO("   {}", rec);
+                                }
+                            }
+                        }
+                    } else {
+                        LOG_INFO("No RME audio interfaces detected");
+                    }
+                }
+                rme_detector.cleanup();
+            }
 #endif
 
             // Analyze each interface for gPTP suitability
@@ -249,8 +295,9 @@ namespace gptp {
                 LOG_WARN("No gPTP-capable interfaces found!");
                 LOG_INFO("Recommendations:");
                 LOG_INFO("  - Ensure Intel Ethernet controllers (I210, I219, I225, I226, I350, E810) are installed");
-                LOG_INFO("  - Check that network interfaces are active and connected");
-                LOG_INFO("  - Verify hardware timestamping support with: ethtool -T <interface> (Linux)");
+                LOG_INFO("  - Check if RME audio interfaces (MADIface, Fireface) support IEEE 1588 - contact RME for specs");
+                LOG_INFO("  - Verify that network interfaces are active and connected");
+                LOG_INFO("  - Check hardware timestamping support with: ethtool -T <interface> (Linux)");
                 return ErrorCode::INTERFACE_NOT_FOUND;
             }
 
@@ -356,16 +403,15 @@ namespace gptp {
             LOG_INFO("gPTP daemon is now running on {} interface(s)", interfaces.size());
             LOG_INFO("Press Ctrl+C to stop the daemon");
             
-            // Set up signal handling for graceful shutdown
-            volatile bool keep_running = true;
+            // Reset global shutdown flag
+            g_shutdown_requested = false;
             
 #ifdef _WIN32
             // Windows console control handler
             auto console_handler = [](DWORD dwCtrlType) -> BOOL {
                 if (dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_CLOSE_EVENT) {
                     LOG_INFO("Shutdown signal received, stopping gPTP daemon...");
-                    // Note: In a real implementation, you'd use a proper synchronization mechanism
-                    // This is a simplified approach for demonstration
+                    g_shutdown_requested = true;
                     return TRUE;
                 }
                 return FALSE;
@@ -375,7 +421,7 @@ namespace gptp {
             // Linux signal handling would go here
             signal(SIGINT, [](int) {
                 LOG_INFO("Shutdown signal received, stopping gPTP daemon...");
-                // Set keep_running to false through proper synchronization
+                g_shutdown_requested = true;
             });
 #endif
 
@@ -383,7 +429,7 @@ namespace gptp {
             auto start_time = std::chrono::steady_clock::now();
             size_t loop_count = 0;
             
-            while (keep_running) {
+            while (!g_shutdown_requested) {
                 loop_count++;
                 
                 // Simulate gPTP protocol activities
@@ -418,6 +464,11 @@ namespace gptp {
                 // - Network interface state changes
                 // - Critical errors
             }
+            
+#ifdef _WIN32
+            // Remove the console handler when exiting
+            SetConsoleCtrlHandler(nullptr, FALSE);
+#endif
             
             LOG_INFO("gPTP daemon loop ended gracefully");
             return ErrorCode::SUCCESS;
