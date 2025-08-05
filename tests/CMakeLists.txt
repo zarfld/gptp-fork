@@ -13,6 +13,39 @@ target_include_directories(test_state_machines PRIVATE ../include)
 set_property(TARGET test_state_machines PROPERTY CXX_STANDARD 17)
 set_property(TARGET test_state_machines PROPERTY CXX_STANDARD_REQUIRED ON)
 
+# Add BMCA test
+add_executable(test_bmca test_bmca.cpp ../src/core/bmca.cpp)
+target_include_directories(test_bmca PRIVATE ../include)
+set_property(TARGET test_bmca PROPERTY CXX_STANDARD 17)
+set_property(TARGET test_bmca PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# Platform-specific libraries for BMCA test
+if(WIN32)
+  target_link_libraries(test_bmca ws2_32)
+endif()
+
+# Add Clock Servo test
+add_executable(test_clock_servo test_clock_servo.cpp ../src/core/clock_servo.cpp)
+target_include_directories(test_clock_servo PRIVATE ../include)
+set_property(TARGET test_clock_servo PROPERTY CXX_STANDARD 17)
+set_property(TARGET test_clock_servo PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# Platform-specific libraries for Clock Servo test
+if(WIN32)
+  target_link_libraries(test_clock_servo ws2_32)
+endif()
+
+# Add Integration test
+add_executable(test_integration test_integration.cpp ../src/core/bmca.cpp ../src/core/clock_servo.cpp)
+target_include_directories(test_integration PRIVATE ../include)
+set_property(TARGET test_integration PROPERTY CXX_STANDARD 17)
+set_property(TARGET test_integration PROPERTY CXX_STANDARD_REQUIRED ON)
+
+# Platform-specific libraries for Integration test
+if(WIN32)
+  target_link_libraries(test_integration ws2_32)
+endif()
+
 # Add networking test  
 add_executable(test_networking 
   test_networking.cpp 

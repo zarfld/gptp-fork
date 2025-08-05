@@ -41,6 +41,8 @@ set(CORE_SOURCES
   src/core/timestamp_provider.cpp
   src/core/gptp_state_machines.cpp
   src/core/gptp_clock.cpp
+  src/core/bmca.cpp
+  src/core/clock_servo.cpp
 )
 
 set(NETWORKING_SOURCES
