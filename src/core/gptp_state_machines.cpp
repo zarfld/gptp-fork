@@ -243,7 +243,9 @@ namespace gptp {
             , pdelay_resp_receipt_timeout_(std::chrono::milliseconds(100))
             , last_pdelay_req_time_(std::chrono::nanoseconds::zero())
             , link_delay_(std::chrono::nanoseconds::zero())
+            , neighbor_rate_ratio_(1.0)  // Initialize to 1.0 (perfect rate match)
             , pdelay_req_sequence_id_(0)
+            , path_delay_calc_(gptp::path_delay::PathDelayFactory::create_standard_p2p_calculator())
         {
         }
 
@@ -370,27 +372,86 @@ namespace gptp {
         void LinkDelayStateMachine::process_pdelay_resp_follow_up(const PdelayRespFollowUpMessage& follow_up) {
             std::cout << "[" << name_ << "] Processing Pdelay_Resp_Follow_Up" << std::endl;
             
-            // TODO: Get T3 timestamp from follow-up message and calculate link delay
-            // For now, set a placeholder value
-            link_delay_ = std::chrono::microseconds(10);  // 10µs placeholder
-        }
-
-        std::chrono::nanoseconds LinkDelayStateMachine::calculate_link_delay(
-            const Timestamp& t1, const Timestamp& t2, const Timestamp& t3, const Timestamp& t4) {
+            // Create timestamps structure for path delay calculation using IEEE 802.1AS equations
+            Timestamp t1 = t1_timestamp_;  // Stored from send_pdelay_req
+            Timestamp t4 = t4_timestamp_;  // Stored from process_pdelay_resp
             
-            // IEEE 802.1AS-2021 link delay calculation
-            // linkDelay = ((t4 - t1) - (t3 - t2)) / 2
+            // Extract T3 from the follow-up message (precise transmission timestamp)
+            Timestamp t3 = follow_up.responseOriginTimestamp;
+            
+            // TODO: Get T2 from the stored Pdelay_Resp message
+            // For now, estimate T2 based on T3 and processing delay
+            Timestamp t2 = t3;
+            t2.nanoseconds -= 1000;  // Assume 1µs processing delay
+            
+            // Calculate path delay using IEEE 802.1AS-2021 equations
+            // Equation 16-2: meanLinkDelay = ((t_req4 - t_req1) * r - (t_rsp3 - t_rsp2)) / 2
             
             auto t1_ns = t1.to_nanoseconds();
             auto t2_ns = t2.to_nanoseconds();
             auto t3_ns = t3.to_nanoseconds();
             auto t4_ns = t4.to_nanoseconds();
             
-            auto turnaround_time = t4_ns - t1_ns;
-            auto residence_time = t3_ns - t2_ns;
-            auto link_delay = (turnaround_time - residence_time) / 2;
+            // Calculate turnaround time and residence time
+            auto initiator_turnaround = t4_ns - t1_ns;
+            auto responder_residence = t3_ns - t2_ns;
             
-            return std::chrono::nanoseconds(link_delay.count());
+            // Apply neighbor rate ratio (for now use 1.0, will be updated periodically)
+            auto corrected_turnaround = std::chrono::nanoseconds(
+                static_cast<int64_t>(initiator_turnaround.count() * neighbor_rate_ratio_)
+            );
+            
+            // Calculate mean link delay
+            auto calculated_delay = (corrected_turnaround - responder_residence) / 2;
+            
+            // Ensure non-negative delay
+            if (calculated_delay >= std::chrono::nanoseconds::zero()) {
+                link_delay_ = calculated_delay;
+                
+                std::cout << "[" << name_ << "] Path delay calculated: " 
+                          << link_delay_.count() << " ns, rate ratio: " 
+                          << neighbor_rate_ratio_ << std::endl;
+                std::cout << "[" << name_ << "] Turnaround: " << initiator_turnaround.count() 
+                          << " ns, Residence: " << responder_residence.count() << " ns" << std::endl;
+            } else {
+                std::cout << "[" << name_ << "] Negative path delay calculated, using fallback" << std::endl;
+                link_delay_ = std::chrono::microseconds(10);  // Fallback value
+            }
+        }
+
+        std::chrono::nanoseconds LinkDelayStateMachine::calculate_link_delay(
+            const Timestamp& t1, const Timestamp& t2, const Timestamp& t3, const Timestamp& t4) {
+            
+            // Create timestamps structure for the path delay calculator
+            gptp::path_delay::PdelayTimestamps timestamps;
+            timestamps.t1 = t1;
+            timestamps.t2 = t2;
+            timestamps.t3 = t3;
+            timestamps.t4 = t4;
+            timestamps.t2_valid = true;
+            timestamps.t3_valid = true;
+            timestamps.sequence_id = pdelay_req_sequence_id_;
+            
+            // Use the full IEEE 802.1AS-2021 path delay calculator
+            auto result = path_delay_calc_->calculate_path_delay(timestamps);
+            
+            if (result.valid) {
+                // Update neighbor rate ratio from the calculation
+                neighbor_rate_ratio_ = result.neighbor_rate_ratio;
+                return result.mean_link_delay;
+            } else {
+                // Fallback to basic calculation if advanced calculation fails
+                auto t1_ns = t1.to_nanoseconds();
+                auto t2_ns = t2.to_nanoseconds();
+                auto t3_ns = t3.to_nanoseconds();
+                auto t4_ns = t4.to_nanoseconds();
+                
+                auto turnaround_time = t4_ns - t1_ns;
+                auto residence_time = t3_ns - t2_ns;
+                auto link_delay = (turnaround_time - residence_time) / 2;
+                
+                return std::chrono::nanoseconds(link_delay.count());
+            }
         }
 
         void LinkDelayStateMachine::on_state_entry(int state) {

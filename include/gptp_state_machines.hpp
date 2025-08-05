@@ -11,10 +11,16 @@
 
 #pragma once
 
-#include "gptp_protocol.hpp"
+#include "path_delay_calculator.hpp"
 #include <chrono>
 #include <memory>
 #include <string>
+
+// Forward declarations
+namespace path_delay {
+    class IPathDelayCalculator;
+    class PathDelayCalculator;
+}
 
 namespace gptp {
 
@@ -171,6 +177,7 @@ namespace gptp {
             );
             
             std::chrono::nanoseconds get_link_delay() const { return link_delay_; }
+            double get_neighbor_rate_ratio() const { return neighbor_rate_ratio_; }
             
         private:
             void on_state_entry(int state) override;
@@ -185,6 +192,10 @@ namespace gptp {
             std::chrono::nanoseconds pdelay_resp_receipt_timeout_;
             std::chrono::nanoseconds last_pdelay_req_time_;
             std::chrono::nanoseconds link_delay_;
+            double neighbor_rate_ratio_;  // IEEE 802.1AS neighborRateRatio
+            
+            // Simplified path delay calculation
+            std::unique_ptr<gptp::path_delay::IPathDelayCalculator> path_delay_calc_;
             
             // Temporary storage for delay calculation
             Timestamp t1_timestamp_;  // Pdelay_Req TX time
