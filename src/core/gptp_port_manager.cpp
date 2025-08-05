@@ -4,6 +4,7 @@
  */
 
 #include "../../include/gptp_port_manager.hpp"
+#include "../../include/message_serializer.hpp"
 #include "../../include/gptp_clock.hpp"
 #include "../../include/gptp_state_machines.hpp"
 #include <iostream>
@@ -474,24 +475,15 @@ SyncMessage GptpPortManager::build_sync_message(uint8_t domain_number, uint16_t 
 }
 
 std::vector<uint8_t> GptpPortManager::serialize_message(const AnnounceMessage& message) {
-    // TODO: Implement proper message serialization
-    std::vector<uint8_t> data(sizeof(AnnounceMessage));
-    std::memcpy(data.data(), &message, sizeof(AnnounceMessage));
-    return data;
+    return serialization::MessageSerializer::serialize_announce(message);
 }
 
 std::vector<uint8_t> GptpPortManager::serialize_message(const SyncMessage& message) {
-    // TODO: Implement proper message serialization
-    std::vector<uint8_t> data(sizeof(SyncMessage));
-    std::memcpy(data.data(), &message, sizeof(SyncMessage));
-    return data;
+    return serialization::MessageSerializer::serialize_sync(message);
 }
 
 std::vector<uint8_t> GptpPortManager::serialize_message(const FollowUpMessage& message) {
-    // TODO: Implement proper message serialization
-    std::vector<uint8_t> data(sizeof(FollowUpMessage));
-    std::memcpy(data.data(), &message, sizeof(FollowUpMessage));
-    return data;
+    return serialization::MessageSerializer::serialize_followup(message);
 }
 
 bmca::PriorityVector GptpPortManager::create_local_priority_vector(uint8_t domain_number) {
