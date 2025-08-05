@@ -1,6 +1,9 @@
 /**
  * @file gptp_socket.hpp
- * @brief IEEE 802.1AS gPTP socket handling for raw Ethernet frames
+ * @brief IEEE 802.1AS gPTP soc        // Get best available timestamp
+        std::chrono::nanoseconds get_timestamp() const {
+            return is_hardware_timestamp ? hardware_timestamp : software_timestamp;
+        }handling for raw Ethernet frames
  * 
  * This file provides platform-agnostic socket handling for gPTP messages
  * using raw Ethernet sockets with proper timestamping support.
@@ -19,9 +22,37 @@
 
 namespace gptp {
 
-    // Forward declare Result template (to avoid circular includes)
+    /**
+     * @brief Result type for error handling
+     */
     template<typename T>
-    class Result; // Will be defined in gptp_types.hpp or included elsewhere
+    class Result {
+    public:
+        static Result success(const T& value) {
+            Result result;
+            result.success_ = true;
+            result.value_ = value;
+            return result;
+        }
+
+        static Result error(const std::string& error_message) {
+            Result result;
+            result.success_ = false;
+            result.error_message_ = error_message;
+            return result;
+        }
+
+        bool is_success() const { return success_; }
+        bool is_error() const { return !success_; }
+        
+        const T& value() const { return value_; }
+        const std::string& error() const { return error_message_; }
+
+    private:
+        bool success_ = false;
+        T value_{};
+        std::string error_message_;
+    };
 
     /**
      * @brief Timestamp information for received/transmitted packets
@@ -29,12 +60,12 @@ namespace gptp {
     struct PacketTimestamp {
         std::chrono::nanoseconds hardware_timestamp{0};
         std::chrono::nanoseconds software_timestamp{0};
-        bool hardware_timestamp_valid = false;
+        bool is_hardware_timestamp = false;
         bool software_timestamp_valid = false;
         
         // Get the best available timestamp
         std::chrono::nanoseconds get_best_timestamp() const {
-            return hardware_timestamp_valid ? hardware_timestamp : software_timestamp;
+            return is_hardware_timestamp ? hardware_timestamp : software_timestamp;
         }
     };
 

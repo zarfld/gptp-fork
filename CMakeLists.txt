@@ -43,6 +43,11 @@ set(CORE_SOURCES
   src/core/gptp_clock.cpp
 )
 
+set(NETWORKING_SOURCES
+  src/networking/socket_manager.cpp
+  src/networking/packet_builder.cpp
+)
+
 set(UTILS_SOURCES
   src/utils/configuration.cpp
 )
@@ -50,6 +55,7 @@ set(UTILS_SOURCES
 set(COMMON_SOURCES
   src/main.cpp
   ${CORE_SOURCES}
+  ${NETWORKING_SOURCES}
   ${UTILS_SOURCES}
 )
 
@@ -59,6 +65,7 @@ if(WIN32)
     src/platform/windows_timestamp_provider.cpp
     src/platform/windows_adapter_detector.cpp
     src/platform/rme_adapter_detector.cpp
+    src/networking/windows_socket.cpp
   )
 endif()
 
@@ -67,6 +74,7 @@ if(UNIX AND NOT APPLE)
   list(APPEND COMMON_SOURCES
     src/platform/linux_timestamp_provider.cpp
     src/platform/linux_adapter_detector.cpp
+    src/networking/linux_socket.cpp
   )
 endif()
 
