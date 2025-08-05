@@ -46,16 +46,22 @@ set(CORE_SOURCES
   src/core/gptp_port_manager.cpp
   src/core/clock_quality_manager.cpp
   src/core/path_delay_calculator.cpp
+  src/core/simple_path_delay.cpp
   src/core/sequence_number_manager.cpp
 )
 
 set(NETWORKING_SOURCES
   src/networking/socket_manager.cpp
   src/networking/packet_builder.cpp
+  src/networking/message_processor.cpp
 )
 
 set(UTILS_SOURCES
   src/utils/configuration.cpp
+)
+
+set(PLATFORM_SOURCES
+  src/platform/hardware_timestamping.cpp
 )
 
 set(COMMON_SOURCES
@@ -63,6 +69,7 @@ set(COMMON_SOURCES
   ${CORE_SOURCES}
   ${NETWORKING_SOURCES}
   ${UTILS_SOURCES}
+  ${PLATFORM_SOURCES}
 )
 
 # Platform-specific sources

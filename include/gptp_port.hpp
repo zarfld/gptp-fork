@@ -192,6 +192,16 @@ public:
      */
     servo::SynchronizationManager::SyncStatus get_sync_status() const;
 
+    /**
+     * @brief Get local clock identity
+     */
+    const ClockIdentity& get_local_clock_identity() const { return local_clock_id_; }
+
+    /**
+     * @brief Get message sender callback
+     */
+    const MessageSender& get_message_sender() const { return message_sender_; }
+
 private:
     // ========================================================================
     // Core Components

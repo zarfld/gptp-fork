@@ -17,6 +17,8 @@
 #include <IPTypes.h>
 #include <ipifcons.h>
 #include <winapifamily.h>
+#include <optional>
+#include <algorithm>
 
 #pragma comment(lib, "Iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -78,6 +80,22 @@ namespace gptp {
          */
         static TimestampCapabilities convert_timestamp_capabilities(
             const INTERFACE_TIMESTAMP_CAPABILITIES& win_caps);
+
+        /**
+         * @brief Detect Intel hardware timestamping capabilities
+         * @param interface_name Name of the network interface  
+         * @param capabilities Output parameter for detected capabilities
+         * @return true if Intel adapter with timestamping found
+         */
+        bool detect_intel_hardware_timestamping(
+            const InterfaceName& interface_name, TimestampCapabilities& capabilities);
+
+        /**
+         * @brief Check if adapter supports Intel hardware timestamping
+         * @param adapter Windows IP_ADAPTER_INFO structure
+         * @return true if Intel adapter with timestamping support
+         */
+        bool is_intel_adapter_with_timestamping(PIP_ADAPTER_INFO adapter);
 
         /**
          * @brief Get detailed error message for Windows error codes

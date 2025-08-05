@@ -130,10 +130,20 @@ namespace gptp {
             void on_state_entry(int state) override;
             void on_state_exit(int state) override;
             
+            // Message serialization and transmission helpers
+            std::vector<uint8_t> serialize_sync_message(const SyncMessage& sync_msg);
+            std::vector<uint8_t> serialize_followup_message(const FollowUpMessage& followup_msg);
+            void schedule_followup_transmission();
+            
             GptpPort* port_;
             std::chrono::nanoseconds follow_up_receipt_timeout_;
             std::chrono::nanoseconds last_md_sync_time_;
             bool waiting_for_follow_up_;
+            
+            // Sequence tracking
+            uint16_t sync_sequence_id_;
+            uint16_t last_sync_sequence_;
+            Timestamp last_sync_timestamp_;
         };
 
         /**

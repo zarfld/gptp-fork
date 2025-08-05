@@ -6,6 +6,7 @@
 #include "../../include/gptp_state_machines.hpp"
 #include "../../include/gptp_clock.hpp"
 #include <iostream>
+#include <cstring>
 
 namespace gptp {
 
@@ -127,6 +128,8 @@ namespace gptp {
             , follow_up_receipt_timeout_(std::chrono::milliseconds(100))
             , last_md_sync_time_(std::chrono::nanoseconds::zero())
             , waiting_for_follow_up_(false)
+            , sync_sequence_id_(0)
+            , last_sync_sequence_(0)
         {
         }
 
@@ -205,7 +208,44 @@ namespace gptp {
 
         void MDSyncStateMachine::tx_md_sync() {
             std::cout << "[" << name_ << "] Transmitting MD Sync message" << std::endl;
-            // TODO: Implement actual sync message transmission
+            
+            // Create basic sync message structure
+            SyncMessage sync_msg;
+            sync_msg.header.messageType = static_cast<uint8_t>(protocol::MessageType::SYNC);
+            sync_msg.header.transportSpecific = 1; // IEEE 802.1AS
+            sync_msg.header.versionPTP = 2;
+            sync_msg.header.messageLength = sizeof(SyncMessage);
+            sync_msg.header.domainNumber = 0; // gPTP domain 0
+            sync_msg.header.flags = 0x0008; // twoStep flag set
+            sync_msg.header.correctionField = 0;
+            sync_msg.header.sequenceId = ++sync_sequence_id_;
+            sync_msg.header.controlField = 0x00; // Sync
+            sync_msg.header.logMessageInterval = -3; // 125ms = 2^(-3) seconds
+            
+            // Set basic port identity (simplified for now)
+            // In a complete implementation, this would get actual clock ID and port ID
+            std::fill(std::begin(sync_msg.header.sourcePortIdentity.clockIdentity.id), 
+                     std::end(sync_msg.header.sourcePortIdentity.clockIdentity.id), static_cast<uint8_t>(0));
+            sync_msg.header.sourcePortIdentity.portNumber = 1; // Default port
+            
+            // Set current timestamp
+            auto now = std::chrono::high_resolution_clock::now();
+            auto ns_since_epoch = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
+            
+            sync_msg.originTimestamp.set_seconds(ns_since_epoch.count() / 1000000000ULL);
+            sync_msg.originTimestamp.nanoseconds = ns_since_epoch.count() % 1000000000ULL;
+            
+            // Store for follow-up message
+            last_sync_timestamp_ = sync_msg.originTimestamp;
+            last_sync_sequence_ = sync_msg.header.sequenceId;
+            
+            // Serialize and send (simplified)
+            std::vector<uint8_t> serialized = serialize_sync_message(sync_msg);
+            std::cout << "[" << name_ << "] Sync message prepared (size: " << serialized.size() << " bytes)" << std::endl;
+            
+            // Schedule follow-up message transmission
+            schedule_followup_transmission();
+            
             process_event(Event::MD_SYNC_SEND, nullptr);
         }
 
@@ -245,7 +285,7 @@ namespace gptp {
             , link_delay_(std::chrono::nanoseconds::zero())
             , neighbor_rate_ratio_(1.0)  // Initialize to 1.0 (perfect rate match)
             , pdelay_req_sequence_id_(0)
-            , path_delay_calc_(gptp::path_delay::PathDelayFactory::create_standard_p2p_calculator())
+            , path_delay_calc_(gptp::path_delay::PathDelayFactory::create_standard_p2p_calculator(0))
         {
         }
 
@@ -692,6 +732,50 @@ namespace gptp {
 
     std::chrono::nanoseconds GptpPort::get_link_delay() const {
         return link_delay_sm_->get_link_delay();
+    }
+
+    // ============================================================================
+    // MDSyncStateMachine Helper Methods
+    // ============================================================================
+
+    std::vector<uint8_t> state_machine::MDSyncStateMachine::serialize_sync_message(const SyncMessage& sync_msg) {
+        std::vector<uint8_t> buffer(sizeof(SyncMessage));
+        std::memcpy(buffer.data(), &sync_msg, sizeof(SyncMessage));
+        return buffer;
+    }
+
+    std::vector<uint8_t> state_machine::MDSyncStateMachine::serialize_followup_message(const FollowUpMessage& followup_msg) {
+        std::vector<uint8_t> buffer(sizeof(FollowUpMessage));
+        std::memcpy(buffer.data(), &followup_msg, sizeof(FollowUpMessage));
+        return buffer;
+    }
+
+    void state_machine::MDSyncStateMachine::schedule_followup_transmission() {
+        // Create follow-up message with precise timestamp
+        FollowUpMessage followup_msg;
+        followup_msg.header.messageType = static_cast<uint8_t>(protocol::MessageType::FOLLOW_UP);
+        followup_msg.header.transportSpecific = 1; // IEEE 802.1AS
+        followup_msg.header.versionPTP = 2;
+        followup_msg.header.messageLength = sizeof(FollowUpMessage);
+        followup_msg.header.domainNumber = 0; // gPTP domain 0
+        followup_msg.header.flags = 0x0000; // No flags for follow-up
+        followup_msg.header.correctionField = 0;
+        followup_msg.header.sequenceId = last_sync_sequence_;
+        followup_msg.header.controlField = 0x02; // Follow_Up
+        followup_msg.header.logMessageInterval = -3; // Same as sync
+
+        // Set basic port identity (simplified)
+        std::fill(std::begin(followup_msg.header.sourcePortIdentity.clockIdentity.id), 
+                 std::end(followup_msg.header.sourcePortIdentity.clockIdentity.id), static_cast<uint8_t>(0));
+        followup_msg.header.sourcePortIdentity.portNumber = 1; // Default port
+
+        // Set precise origin timestamp from sync message
+        followup_msg.preciseOriginTimestamp = last_sync_timestamp_;
+
+        // Serialize follow-up message
+        std::vector<uint8_t> serialized = serialize_followup_message(followup_msg);
+        std::cout << "[" << name_ << "] Follow-up message prepared for sequence " 
+                  << last_sync_sequence_ << " (size: " << serialized.size() << " bytes)" << std::endl;
     }
 
 } // namespace gptp
