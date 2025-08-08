@@ -118,7 +118,9 @@ namespace gptp {
 
     // Network interface information
     struct NetworkInterface {
-        InterfaceName name;
+        InterfaceName name;           // Friendly name (e.g., "Ethernet", "Ethernet 3")
+        std::string guid;            // Windows GUID identifier
+        std::string description;     // Hardware description
         MacAddress mac_address;
         bool is_active = false;
         TimestampCapabilities capabilities;

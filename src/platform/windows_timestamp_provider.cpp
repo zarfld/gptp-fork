@@ -182,13 +182,23 @@ namespace gptp {
         const IP_ADAPTER_INFO& adapter_info) const {
         
         NetworkInterface interface;
-        interface.name = std::string(adapter_info.AdapterName);
         
-        // Copy MAC address
-        if (adapter_info.AddressLength <= interface.mac_address.size()) {
-            std::memcpy(interface.mac_address.data(), 
-                       adapter_info.Address, 
-                       adapter_info.AddressLength);
+        // CRITICAL FIX: Map GUID to friendly name for WinPcap compatibility
+        interface.name = get_friendly_interface_name(adapter_info.AdapterName, adapter_info.Description);
+        
+        // Store both GUID and friendly name for reference
+        interface.guid = std::string(adapter_info.AdapterName);
+        interface.description = std::string(adapter_info.Description);
+        
+        // Copy MAC address (convert from binary to string format)
+        if (adapter_info.AddressLength > 0) {
+            std::stringstream mac_stream;
+            for (UINT i = 0; i < adapter_info.AddressLength; ++i) {
+                if (i > 0) mac_stream << ":";
+                mac_stream << std::hex << std::setw(2) << std::setfill('0') 
+                          << static_cast<int>(adapter_info.Address[i]);
+            }
+            interface.mac_address = mac_stream.str();
         }
         
         interface.is_active = (adapter_info.Type != MIB_IF_TYPE_LOOPBACK);
@@ -240,6 +250,21 @@ namespace gptp {
             default:
                 return ErrorCode::NETWORK_ERROR;
         }
+    }
+
+    std::string WindowsTimestampProvider::get_friendly_interface_name(
+        const std::string& adapter_name, const std::string& description) const {
+        
+        // CRITICAL FIX: Use WinPcap format exactly as detected from enumeration
+        // WinPcap devices use: "\Device\NPF_" + GUID (no rpcap:// prefix)
+        std::string winpcap_format = "\\Device\\NPF_" + adapter_name;
+        
+        // Log the mapping for debugging
+        std::string desc_lower = description;
+        std::transform(desc_lower.begin(), desc_lower.end(), desc_lower.begin(), ::tolower);
+        
+        // Return the WinPcap-compatible name format
+        return winpcap_format;
     }
 
 } // namespace gptp

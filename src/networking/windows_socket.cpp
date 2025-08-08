@@ -73,6 +73,19 @@ Result<bool> WindowsSocket::initialize(const std::string& interface_name) {
         } else {
             std::cout << "✅ [SOCKET] WinPcap devices enumerated successfully" << std::endl;
             
+            // DEBUG: Log all available WinPcap devices
+            std::cout << "🔍 [DEBUG] Available WinPcap devices:" << std::endl;
+            int device_count = 0;
+            for (pcap_if_t* d = devices; d != nullptr; d = d->next) {
+                device_count++;
+                std::cout << "  " << device_count << ". Name: " << d->name << std::endl;
+                if (d->description) {
+                    std::cout << "     Description: " << d->description << std::endl;
+                }
+            }
+            std::cout << "🔍 [DEBUG] Total WinPcap devices found: " << device_count << std::endl;
+            std::cout << "🎯 [DEBUG] Looking for: " << interface_name << std::endl;
+            
             pcap_if_t* device = nullptr;
             for (pcap_if_t* d = devices; d != nullptr; d = d->next) {
                 if (interface_name == d->name || 
@@ -387,20 +400,62 @@ bool WindowsSocket::get_interface_mac_address() {
     PIP_ADAPTER_INFO adapter_info = reinterpret_cast<PIP_ADAPTER_INFO>(adapter_buffer.data());
     
     if (GetAdaptersInfo(adapter_info, &adapter_info_size) != ERROR_SUCCESS) {
+        std::cout << "❌ [MAC] GetAdaptersInfo failed" << std::endl;
         return false;
     }
 
-    // Find our interface
+    // CRITICAL FIX: Extract GUID from WinPcap format for comparison
+    // interface_name_ format: "\Device\NPF_{GUID}"
+    // adapter->AdapterName format: "{GUID}"
+    std::string target_guid;
+    size_t npf_pos = interface_name_.find("\\Device\\NPF_");
+    if (npf_pos != std::string::npos) {
+        target_guid = interface_name_.substr(npf_pos + 12); // Skip "\Device\NPF_"
+        std::cout << "🔍 [MAC] Extracted GUID from WinPcap: " << target_guid << std::endl;
+    } else {
+        target_guid = interface_name_;
+        std::cout << "🔍 [MAC] Using full interface name: " << target_guid << std::endl;
+    }
+
+    // Find our interface by GUID
+    std::cout << "🔍 [MAC] Searching through adapters..." << std::endl;
+    int adapter_count = 0;
     for (PIP_ADAPTER_INFO adapter = adapter_info; adapter != nullptr; adapter = adapter->Next) {
-        if (interface_name_ == adapter->AdapterName || 
-            interface_name_ == adapter->Description) {
+        adapter_count++;
+        std::string adapter_guid(adapter->AdapterName);
+        std::string adapter_desc(adapter->Description);
+        
+        std::cout << "🔍 [MAC] Adapter " << adapter_count << ":" << std::endl;
+        std::cout << "    GUID: " << adapter_guid << std::endl;
+        std::cout << "    Desc: " << adapter_desc << std::endl;
+        std::cout << "    Target: " << target_guid << std::endl;
+        
+        // Try exact GUID match
+        if (target_guid == adapter_guid) {
+            std::cout << "✅ [MAC] Exact GUID match found!" << std::endl;
             if (adapter->AddressLength == 6) {
                 std::memcpy(mac_address_.data(), adapter->Address, 6);
+                std::cout << "✅ [MAC] MAC address extracted successfully" << std::endl;
+                return true;
+            } else {
+                std::cout << "⚠️  [MAC] Adapter has invalid MAC length: " << adapter->AddressLength << std::endl;
+            }
+        }
+        
+        // Try substring match as fallback
+        if (interface_name_.find(adapter_guid) != std::string::npos) {
+            std::cout << "✅ [MAC] Substring GUID match found!" << std::endl;
+            if (adapter->AddressLength == 6) {
+                std::memcpy(mac_address_.data(), adapter->Address, 6);
+                std::cout << "✅ [MAC] MAC address extracted successfully" << std::endl;
                 return true;
             }
         }
     }
 
+    std::cout << "❌ [MAC] No matching adapter found after checking " << adapter_count << " adapters" << std::endl;
+    std::cout << "   Interface: " << interface_name_ << std::endl;
+    std::cout << "   Target GUID: " << target_guid << std::endl;
     return false;
 }
 

@@ -532,15 +532,56 @@ namespace gptp {
             auto start_time = std::chrono::steady_clock::now();
             size_t loop_count = 0;
             
+            // CREATE REAL STATE MACHINES FOR EACH INTERFACE
+            std::vector<std::unique_ptr<gptp::GptpStateMachines>> state_machines;
+            
+            for (const auto& interface : interfaces) {
+                try {
+                    // Create state machine for this interface
+                    auto state_machine = std::make_unique<gptp::GptpStateMachines>();
+                    
+                    // Create socket for this interface
+                    auto socket = std::make_shared<gptp::WindowsSocket>(interface.name);
+                    auto socket_result = socket->initialize();
+                    
+                    if (!socket_result.has_error()) {
+                        // Initialize state machine with socket
+                        auto init_result = state_machine->initialize(socket, 0, 0); // Domain 0, Port 0
+                        
+                        if (!init_result.has_error()) {
+                            state_machines.push_back(std::move(state_machine));
+                            LOG_INFO("✅ [PROTOCOL] State machine active for interface: {}", interface.name);
+                        } else {
+                            LOG_WARN("⚠️  [PROTOCOL] State machine initialization failed for {}", interface.name);
+                        }
+                    } else {
+                        LOG_WARN("⚠️  [PROTOCOL] Socket creation failed for {}", interface.name);
+                    }
+                } catch (const std::exception& e) {
+                    LOG_ERROR("❌ [PROTOCOL] Exception creating state machine for {}: {}", interface.name, e.what());
+                }
+            }
+            
+            LOG_INFO("🚀 [PROTOCOL] Started {} active state machines - REAL gPTP packets will be sent!", state_machines.size());
+            
             while (!g_shutdown_requested) {
                 loop_count++;
                 
-                // Simulate gPTP protocol activities
-                // In a real implementation, this would handle:
-                // - Processing incoming gPTP packets
-                // - Sending periodic sync/announce/pdelay messages
-                // - Updating local clock synchronization
-                // - Managing gPTP state machines for each interface
+                // REAL PROTOCOL EXECUTION: Process all state machines
+                for (auto& state_machine : state_machines) {
+                    if (state_machine) {
+                        try {
+                            // Execute one protocol cycle - this sends REAL packets!
+                            state_machine->handle_timer_event();
+                            
+                            // Process any pending events
+                            state_machine->process_events();
+                            
+                        } catch (const std::exception& e) {
+                            LOG_ERROR("❌ [PROTOCOL] State machine error: {}", e.what());
+                        }
+                    }
+                }
                 
                 if (loop_count % 100 == 0) { // Log status every ~10 seconds (with 100ms sleep)
                     auto current_time = std::chrono::steady_clock::now();

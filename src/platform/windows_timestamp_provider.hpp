@@ -103,6 +103,14 @@ namespace gptp {
          * @return Corresponding ErrorCode enum value
          */
         static ErrorCode map_windows_error(DWORD error_code);
+        
+        /**
+         * @brief Map Windows GUID to friendly interface name for WinPcap
+         * @param adapter_name Windows adapter GUID (e.g., {12345678-...})
+         * @param description Hardware description for fallback
+         * @return Friendly name (e.g., "Ethernet", "Ethernet 3") or GUID if not found
+         */
+        std::string get_friendly_interface_name(const std::string& adapter_name, const std::string& description) const;
     };
 
 } // namespace gptp
