@@ -1,11 +1,13 @@
 #include "core/timestamp_provider.hpp"
 #include "utils/logger.hpp"
 #include "../include/gptp_socket.hpp"
+#include "../include/gptp_message_parser.hpp"
 // #include "../include/gptp_port_manager.hpp"
 // #include "../include/gptp_protocol.hpp"
 #ifdef _WIN32
     #include "platform/windows_adapter_detector.hpp"
     #include "platform/rme_adapter_detector.hpp"
+    #include "networking/windows_socket.hpp"
     #include <windows.h>
 #endif
 #ifdef __linux__
@@ -532,59 +534,168 @@ namespace gptp {
             auto start_time = std::chrono::steady_clock::now();
             size_t loop_count = 0;
             
-            // CREATE REAL STATE MACHINES FOR EACH INTERFACE
-            std::vector<std::unique_ptr<gptp::GptpStateMachines>> state_machines;
+            // Store socket instances for each interface to send REAL gPTP packets
+            std::vector<std::shared_ptr<WindowsSocket>> active_sockets;
             
             for (const auto& interface : interfaces) {
                 try {
-                    // Create state machine for this interface
-                    auto state_machine = std::make_unique<gptp::GptpStateMachines>();
+                    auto socket = std::make_shared<WindowsSocket>();
+                    auto socket_result = socket->initialize(interface.name);
                     
-                    // Create socket for this interface
-                    auto socket = std::make_shared<gptp::WindowsSocket>(interface.name);
-                    auto socket_result = socket->initialize();
-                    
-                    if (!socket_result.has_error()) {
-                        // Initialize state machine with socket
-                        auto init_result = state_machine->initialize(socket, 0, 0); // Domain 0, Port 0
-                        
-                        if (!init_result.has_error()) {
-                            state_machines.push_back(std::move(state_machine));
-                            LOG_INFO("✅ [PROTOCOL] State machine active for interface: {}", interface.name);
-                        } else {
-                            LOG_WARN("⚠️  [PROTOCOL] State machine initialization failed for {}", interface.name);
-                        }
+                    if (socket_result.is_success()) {
+                        active_sockets.push_back(socket);
+                        LOG_INFO("✅ [PROTOCOL] Active socket created for interface: {}", interface.name);
                     } else {
                         LOG_WARN("⚠️  [PROTOCOL] Socket creation failed for {}", interface.name);
                     }
                 } catch (const std::exception& e) {
-                    LOG_ERROR("❌ [PROTOCOL] Exception creating state machine for {}: {}", interface.name, e.what());
+                    LOG_ERROR("❌ [PROTOCOL] Exception creating socket for {}: {}", interface.name, e.what());
                 }
             }
             
-            LOG_INFO("🚀 [PROTOCOL] Started {} active state machines - REAL gPTP packets will be sent!", state_machines.size());
+            LOG_INFO("🚀 [PROTOCOL] Started {} active sockets - REAL gPTP packets will be sent!", active_sockets.size());
+            
+            // Protocol timing variables
+            auto last_sync_time = start_time;
+            auto last_announce_time = start_time;
+            auto last_pdelay_time = start_time;
             
             while (!g_shutdown_requested) {
                 loop_count++;
+                auto current_time = std::chrono::steady_clock::now();
                 
-                // REAL PROTOCOL EXECUTION: Process all state machines
-                for (auto& state_machine : state_machines) {
-                    if (state_machine) {
-                        try {
-                            // Execute one protocol cycle - this sends REAL packets!
-                            state_machine->handle_timer_event();
-                            
-                            // Process any pending events
-                            state_machine->process_events();
-                            
-                        } catch (const std::exception& e) {
-                            LOG_ERROR("❌ [PROTOCOL] State machine error: {}", e.what());
+                // REAL PROTOCOL EXECUTION: Send gPTP packets according to IEEE 802.1AS timing
+                
+                // Send Sync messages every 125ms (8/second)
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_sync_time).count() >= 125) {
+                    for (auto& socket : active_sockets) {
+                        if (socket) {
+                            try {
+                                // Create and send Sync packet
+                                GptpPacket sync_packet;
+                                
+                                // Configure Ethernet header for gPTP
+                                sync_packet.ethernet.etherType = 0x88f7; // gPTP EtherType
+                                
+                                // Create gPTP Sync message payload (standard IEEE 802.1AS format)
+                                sync_packet.payload.resize(44); // Standard gPTP Sync size
+                                
+                                // gPTP header fields in payload
+                                sync_packet.payload[0] = 0x00; // transportSpecific (4 bits) + messageType (4 bits) - Sync = 0x0
+                                sync_packet.payload[1] = 0x02; // reserved + versionPTP
+                                sync_packet.payload[2] = 0x00; // messageLength high byte
+                                sync_packet.payload[3] = 0x2C; // messageLength low byte (44 bytes)
+                                sync_packet.payload[4] = 0x00; // domainNumber
+                                sync_packet.payload[5] = 0x00; // reserved
+                                sync_packet.payload[6] = 0x02; // flags high byte (two-step flag)
+                                sync_packet.payload[7] = 0x00; // flags low byte
+                                
+                                // Sequence ID (bytes 30-31)
+                                uint16_t seq_id = static_cast<uint16_t>(loop_count & 0xFFFF);
+                                sync_packet.payload[30] = (seq_id >> 8) & 0xFF;
+                                sync_packet.payload[31] = seq_id & 0xFF;
+                                
+                                PacketTimestamp timestamp;
+                                auto result = socket->send_packet(sync_packet, timestamp);
+                                
+                                if (result.is_success()) {
+                                    LOG_DEBUG("Sync packet sent via WinPcap");
+                                }
+                            } catch (const std::exception& e) {
+                                LOG_ERROR("❌ [PROTOCOL] Sync packet error: {}", e.what());
+                            }
                         }
                     }
+                    last_sync_time = current_time;
+                }
+                
+                // Send Announce messages every 1000ms (1/second)
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_announce_time).count() >= 1000) {
+                    for (auto& socket : active_sockets) {
+                        if (socket) {
+                            try {
+                                // Create and send Announce packet
+                                GptpPacket announce_packet;
+                                
+                                // Configure Ethernet header for gPTP
+                                announce_packet.ethernet.etherType = 0x88f7; // gPTP EtherType
+                                
+                                // Create gPTP Announce message payload (standard IEEE 802.1AS format)
+                                announce_packet.payload.resize(64); // Standard gPTP Announce size
+                                
+                                // gPTP header fields in payload
+                                announce_packet.payload[0] = 0x0B; // transportSpecific (4 bits) + messageType (4 bits) - Announce = 0xB
+                                announce_packet.payload[1] = 0x02; // reserved + versionPTP
+                                announce_packet.payload[2] = 0x00; // messageLength high byte
+                                announce_packet.payload[3] = 0x40; // messageLength low byte (64 bytes)
+                                announce_packet.payload[4] = 0x00; // domainNumber
+                                announce_packet.payload[5] = 0x00; // reserved
+                                announce_packet.payload[6] = 0x00; // flags high byte
+                                announce_packet.payload[7] = 0x00; // flags low byte
+                                
+                                // Sequence ID (bytes 30-31)
+                                uint16_t seq_id = static_cast<uint16_t>((loop_count / 8) & 0xFFFF);
+                                announce_packet.payload[30] = (seq_id >> 8) & 0xFF;
+                                announce_packet.payload[31] = seq_id & 0xFF;
+                                
+                                PacketTimestamp timestamp;
+                                auto result = socket->send_packet(announce_packet, timestamp);
+                                
+                                if (result.is_success()) {
+                                    LOG_DEBUG("Announce packet sent via WinPcap");
+                                }
+                            } catch (const std::exception& e) {
+                                LOG_ERROR("❌ [PROTOCOL] Announce packet error: {}", e.what());
+                            }
+                        }
+                    }
+                    last_announce_time = current_time;
+                }
+                
+                // Send PDelay Request messages every 1000ms (1/second)
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_pdelay_time).count() >= 1000) {
+                    for (auto& socket : active_sockets) {
+                        if (socket) {
+                            try {
+                                // Create and send PDelay Request packet
+                                GptpPacket pdelay_packet;
+                                
+                                // Configure Ethernet header for gPTP
+                                pdelay_packet.ethernet.etherType = 0x88f7; // gPTP EtherType
+                                
+                                // Create gPTP PDelay_Req message payload (standard IEEE 802.1AS format)
+                                pdelay_packet.payload.resize(54); // Standard gPTP PDelay size
+                                
+                                // gPTP header fields in payload
+                                pdelay_packet.payload[0] = 0x02; // transportSpecific (4 bits) + messageType (4 bits) - PDelay_Req = 0x2
+                                pdelay_packet.payload[1] = 0x02; // reserved + versionPTP
+                                pdelay_packet.payload[2] = 0x00; // messageLength high byte
+                                pdelay_packet.payload[3] = 0x36; // messageLength low byte (54 bytes)
+                                pdelay_packet.payload[4] = 0x00; // domainNumber
+                                pdelay_packet.payload[5] = 0x00; // reserved
+                                pdelay_packet.payload[6] = 0x00; // flags high byte
+                                pdelay_packet.payload[7] = 0x00; // flags low byte
+                                
+                                // Sequence ID (bytes 30-31)
+                                uint16_t seq_id = static_cast<uint16_t>((loop_count / 8) & 0xFFFF);
+                                pdelay_packet.payload[30] = (seq_id >> 8) & 0xFF;
+                                pdelay_packet.payload[31] = seq_id & 0xFF;
+                                
+                                PacketTimestamp timestamp;
+                                auto result = socket->send_packet(pdelay_packet, timestamp);
+                                
+                                if (result.is_success()) {
+                                    LOG_DEBUG("PDelay Request packet sent via WinPcap");
+                                }
+                            } catch (const std::exception& e) {
+                                LOG_ERROR("❌ [PROTOCOL] PDelay packet error: {}", e.what());
+                            }
+                        }
+                    }
+                    last_pdelay_time = current_time;
                 }
                 
                 if (loop_count % 100 == 0) { // Log status every ~10 seconds (with 100ms sleep)
-                    auto current_time = std::chrono::steady_clock::now();
                     auto uptime = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time);
                     
                     LOG_INFO("gPTP daemon status - Uptime: {}s, Active interfaces: {}", 
