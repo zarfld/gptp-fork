@@ -15,6 +15,11 @@
 #include <cstdio>
 #include <string>
 #include <stdexcept>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#endif
 
 // Cross-platform packed struct attribute
 #ifdef _MSC_VER
@@ -50,7 +55,7 @@ namespace gptp {
         std::array<uint8_t, 6> source;
         uint16_t etherType;
         
-        EthernetFrame() : etherType(protocol::GPTP_ETHERTYPE) {
+        EthernetFrame() : etherType(htons(protocol::GPTP_ETHERTYPE)) {
             destination = protocol::GPTP_MULTICAST_MAC;
             std::fill(source.begin(), source.end(), 0);
         }
@@ -229,7 +234,7 @@ namespace gptp {
         // Set up Ethernet header
         packet.ethernet.destination = protocol::GPTP_MULTICAST_MAC;
         packet.ethernet.source = source_mac;
-        packet.ethernet.etherType = protocol::GPTP_ETHERTYPE;
+        packet.ethernet.etherType = htons(protocol::GPTP_ETHERTYPE);
         
         // Serialize the message
         return serialize_message(message, packet.payload);

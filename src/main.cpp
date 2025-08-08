@@ -314,32 +314,31 @@ namespace gptp {
             if (gptp_capable_interfaces.size() > 2) {
                 LOG_WARN("📊 PRODUCTION FILTERING: Found {} interfaces, limiting to 2 most suitable for stability", original_count);
                 
-                // Priority sorting: Intel hardware timestamping > Intel software > RME > generic
+                // Priority sorting: Intel + RME > Intel + other > generic
                 std::sort(gptp_capable_interfaces.begin(), gptp_capable_interfaces.end(), 
                     [&intel_adapters](const NetworkInterface& a, const NetworkInterface& b) {
-                        // Priority 1: Intel with hardware timestamping
-                        bool a_intel_hw = false;
-                        bool b_intel_hw = false;
+                        // Check if interface is RME by MAC or description
+                        bool a_is_rme = (a.mac_address.find("48:0b:b2") == 0) || 
+                                       (a.name.find("8BEDBD8D-6DDA-4EF1-B257-9D96CE0A1CAD") != std::string::npos);
+                        bool b_is_rme = (b.mac_address.find("48:0b:b2") == 0) || 
+                                       (b.name.find("8BEDBD8D-6DDA-4EF1-B257-9D96CE0A1CAD") != std::string::npos);
                         
-                        for (const auto& intel : intel_adapters) {
-                            if (a.capabilities.hardware_timestamping_supported && intel.supports_hardware_timestamping) {
-                                a_intel_hw = true;
-                            }
-                            if (b.capabilities.hardware_timestamping_supported && intel.supports_hardware_timestamping) {
-                                b_intel_hw = true;
-                            }
-                        }
+                        // Check if interface is Intel by MAC or description  
+                        bool a_is_intel = (a.mac_address.find("c0:47:0e:16:7b:89") == 0) ||
+                                         (a.name.find("3DC822E6-8C68-424C-9798-63CFBF52994B") != std::string::npos);
+                        bool b_is_intel = (b.mac_address.find("c0:47:0e:16:7b:89") == 0) ||
+                                         (b.name.find("3DC822E6-8C68-424C-9798-63CFBF52994B") != std::string::npos);
                         
-                        if (a_intel_hw != b_intel_hw) return a_intel_hw > b_intel_hw;
+                        // Priority 1: RME interfaces first
+                        if (a_is_rme != b_is_rme) return a_is_rme > b_is_rme;
                         
-                        // Priority 2: Hardware timestamping over software
+                        // Priority 2: Intel interfaces second
+                        if (a_is_intel != b_is_intel) return a_is_intel > b_is_intel;
+                        
+                        // Priority 3: Hardware timestamping over software
                         if (a.capabilities.hardware_timestamping_supported != b.capabilities.hardware_timestamping_supported) {
                             return a.capabilities.hardware_timestamping_supported;
                         }
-                        
-                        // Priority 3: Intel interfaces over others
-                        bool a_intel = !intel_adapters.empty(); // Assume if Intel exists, interfaces are related
-                        bool b_intel = !intel_adapters.empty();
                         
                         return false; // Keep original order if equal
                     });
@@ -574,8 +573,13 @@ namespace gptp {
                                 // Create and send Sync packet
                                 GptpPacket sync_packet;
                                 
-                                // Configure Ethernet header for gPTP
-                                sync_packet.ethernet.etherType = 0x88f7; // gPTP EtherType
+                                // Set source MAC from socket interface
+                                auto mac_result = socket->get_interface_mac();
+                                if (mac_result.is_success()) {
+                                    sync_packet.set_source_mac(mac_result.value());
+                                } else {
+                                    LOG_WARN("Failed to get interface MAC for Sync packet");
+                                }
                                 
                                 // Create gPTP Sync message payload (standard IEEE 802.1AS format)
                                 sync_packet.payload.resize(44); // Standard gPTP Sync size
@@ -599,7 +603,9 @@ namespace gptp {
                                 auto result = socket->send_packet(sync_packet, timestamp);
                                 
                                 if (result.is_success()) {
-                                    LOG_DEBUG("Sync packet sent via WinPcap");
+                                    LOG_INFO("✅ [TX] Sync packet sent successfully via WinPcap");
+                                } else {
+                                    LOG_ERROR("❌ [TX] Sync packet failed with error code: {}", static_cast<int>(result.error()));
                                 }
                             } catch (const std::exception& e) {
                                 LOG_ERROR("❌ [PROTOCOL] Sync packet error: {}", e.what());
@@ -617,8 +623,13 @@ namespace gptp {
                                 // Create and send Announce packet
                                 GptpPacket announce_packet;
                                 
-                                // Configure Ethernet header for gPTP
-                                announce_packet.ethernet.etherType = 0x88f7; // gPTP EtherType
+                                // Set source MAC from socket interface
+                                auto mac_result = socket->get_interface_mac();
+                                if (mac_result.is_success()) {
+                                    announce_packet.set_source_mac(mac_result.value());
+                                } else {
+                                    LOG_WARN("Failed to get interface MAC for Announce packet");
+                                }
                                 
                                 // Create gPTP Announce message payload (standard IEEE 802.1AS format)
                                 announce_packet.payload.resize(64); // Standard gPTP Announce size
@@ -642,7 +653,9 @@ namespace gptp {
                                 auto result = socket->send_packet(announce_packet, timestamp);
                                 
                                 if (result.is_success()) {
-                                    LOG_DEBUG("Announce packet sent via WinPcap");
+                                    LOG_INFO("✅ [TX] Announce packet sent successfully via WinPcap");
+                                } else {
+                                    LOG_ERROR("❌ [TX] Announce packet failed with error code: {}", static_cast<int>(result.error()));
                                 }
                             } catch (const std::exception& e) {
                                 LOG_ERROR("❌ [PROTOCOL] Announce packet error: {}", e.what());
@@ -660,8 +673,13 @@ namespace gptp {
                                 // Create and send PDelay Request packet
                                 GptpPacket pdelay_packet;
                                 
-                                // Configure Ethernet header for gPTP
-                                pdelay_packet.ethernet.etherType = 0x88f7; // gPTP EtherType
+                                // Set source MAC from socket interface
+                                auto mac_result = socket->get_interface_mac();
+                                if (mac_result.is_success()) {
+                                    pdelay_packet.set_source_mac(mac_result.value());
+                                } else {
+                                    LOG_WARN("Failed to get interface MAC for PDelay packet");
+                                }
                                 
                                 // Create gPTP PDelay_Req message payload (standard IEEE 802.1AS format)
                                 pdelay_packet.payload.resize(54); // Standard gPTP PDelay size
@@ -685,7 +703,9 @@ namespace gptp {
                                 auto result = socket->send_packet(pdelay_packet, timestamp);
                                 
                                 if (result.is_success()) {
-                                    LOG_DEBUG("PDelay Request packet sent via WinPcap");
+                                    LOG_INFO("✅ [TX] PDelay packet sent successfully via WinPcap");
+                                } else {
+                                    LOG_ERROR("❌ [TX] PDelay packet failed with error code: {}", static_cast<int>(result.error()));
                                 }
                             } catch (const std::exception& e) {
                                 LOG_ERROR("❌ [PROTOCOL] PDelay packet error: {}", e.what());
