@@ -1,6 +1,6 @@
 /**
  * @file windows_socket.hpp
- * @brief Windows implementation of gPTP socket using WinPcap/Npcap
+ * @brief Windows implementation of gPTP socket using WinPcap
  */
 
 #pragma once
@@ -12,7 +12,7 @@
 #ifdef _WIN32
 #include <winsock2.h>
 
-// Forward declarations for Npcap types
+// Forward declarations for WinPcap types
 struct pcap;
 typedef struct pcap pcap_t;
 
@@ -20,7 +20,7 @@ namespace gptp {
 
 /**
  * @brief Windows implementation of gPTP socket
- * Uses WinPcap/Npcap for raw Ethernet access with hardware timestamping support
+ * Uses WinPcap for raw Ethernet access with hardware timestamping support
  */
 class WindowsSocket : public IGptpSocket {
 public:
@@ -44,10 +44,10 @@ private:
     std::array<uint8_t, 6> mac_address_;
     bool hardware_timestamping_available_;
     
-    // Npcap/WinPcap handle
+    // WinPcap handle
     pcap_t* pcap_handle_;
     
-    // UDP fallback socket (if Npcap not available)
+    // UDP fallback socket (if WinPcap not available)
     SOCKET udp_socket_;
     
     // Async reception

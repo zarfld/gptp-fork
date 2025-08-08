@@ -18,8 +18,8 @@
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")
 
-// Include Npcap headers if available
-#ifdef HAVE_NPCAP
+// Include WinPcap headers if available
+#ifdef HAVE_WPCAP
 #include <pcap.h>
 #pragma comment(lib, "packet.lib")
 #pragma comment(lib, "wpcap.lib")
@@ -31,6 +31,7 @@ WindowsSocket::WindowsSocket()
     : initialized_(false)
     , hardware_timestamping_available_(false)
     , pcap_handle_(nullptr)
+    , udp_socket_(INVALID_SOCKET)
     , async_thread_running_(false) {
 }
 
@@ -45,86 +46,137 @@ Result<bool> WindowsSocket::initialize(const std::string& interface_name) {
 
     interface_name_ = interface_name;
     
+    std::cout << "🔄 [SOCKET] Initializing socket for interface: " << interface_name << std::endl;
+    
     // Initialize Winsock
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result != 0) {
+        std::cout << "❌ [SOCKET] WSAStartup failed with error: " << result << std::endl;
         return Result<bool>::error(ErrorCode::INITIALIZATION_FAILED);
     }
 
-#ifdef HAVE_NPCAP
-    // Try to initialize with Npcap for raw Ethernet access
+#ifdef HAVE_WPCAP
+    // Try to initialize with WinPcap for raw Ethernet access
+    std::cout << "🔍 [SOCKET] Attempting WinPcap initialization..." << std::endl;
     char errbuf[PCAP_ERRBUF_SIZE];
     
-    // Find the device
-    pcap_if_t* devices;
-    if (pcap_findalldevs(&devices, errbuf) == -1) {
-        WSACleanup();
-        return Result<bool>::error("Error finding devices: " + std::string(errbuf));
-    }
+    // Find the device with timeout protection
+    pcap_if_t* devices = nullptr;
+    std::cout << "📋 [SOCKET] Enumerating WinPcap devices..." << std::endl;
+    
+    try {
+        if (pcap_findalldevs(&devices, errbuf) == -1) {
+            std::cout << "⚠️  [SOCKET] WinPcap device enumeration failed: " << errbuf << std::endl;
+            std::cout << "   Falling back to UDP multicast..." << std::endl;
+            pcap_handle_ = nullptr; // Mark as unavailable
+        } else {
+            std::cout << "✅ [SOCKET] WinPcap devices enumerated successfully" << std::endl;
+            
+            pcap_if_t* device = nullptr;
+            for (pcap_if_t* d = devices; d != nullptr; d = d->next) {
+                if (interface_name == d->name || 
+                    (d->description && interface_name == d->description)) {
+                    device = d;
+                    std::cout << "🎯 [SOCKET] Found matching WinPcap device: " << d->name << std::endl;
+                    break;
+                }
+            }
 
-    pcap_if_t* device = nullptr;
-    for (pcap_if_t* d = devices; d != nullptr; d = d->next) {
-        if (interface_name == d->name || 
-            (d->description && interface_name == d->description)) {
-            device = d;
-            break;
+            if (!device) {
+                std::cout << "⚠️  [SOCKET] WinPcap interface not found: " << interface_name << std::endl;
+                std::cout << "   Falling back to UDP multicast..." << std::endl;
+                pcap_freealldevs(devices);
+                pcap_handle_ = nullptr;
+            } else {
+                std::cout << "🔓 [SOCKET] Opening WinPcap device..." << std::endl;
+                
+                // Open the device with timeout
+                pcap_handle_ = pcap_open_live(device->name, 65536, 1, 1000, errbuf);
+                if (!pcap_handle_) {
+                    std::cout << "⚠️  [SOCKET] WinPcap device open failed: " << errbuf << std::endl;
+                    std::cout << "   Falling back to UDP multicast..." << std::endl;
+                    pcap_freealldevs(devices);
+                } else {
+                    std::cout << "✅ [SOCKET] WinPcap device opened successfully" << std::endl;
+                    
+                    // Set filter for gPTP packets (EtherType 0x88F7)
+                    struct bpf_program fp;
+                    std::string filter_exp = "ether proto 0x88f7";
+                    // Define PCAP_NETMASK_UNKNOWN if not available
+                    #ifndef PCAP_NETMASK_UNKNOWN
+                    #define PCAP_NETMASK_UNKNOWN 0xffffffff
+                    #endif
+                    
+                    std::cout << "🔍 [SOCKET] Compiling packet filter..." << std::endl;
+                    if (pcap_compile(pcap_handle_, &fp, filter_exp.c_str(), 0, PCAP_NETMASK_UNKNOWN) == -1) {
+                        std::cout << "⚠️  [SOCKET] WinPcap filter compilation failed" << std::endl;
+                        std::cout << "   Falling back to UDP multicast..." << std::endl;
+                        pcap_close(pcap_handle_);
+                        pcap_handle_ = nullptr;
+                        pcap_freealldevs(devices);
+                    } else if (pcap_setfilter(pcap_handle_, &fp) == -1) {
+                        std::cout << "⚠️  [SOCKET] WinPcap filter setting failed" << std::endl;
+                        std::cout << "   Falling back to UDP multicast..." << std::endl;
+                        pcap_freecode(&fp);
+                        pcap_close(pcap_handle_);
+                        pcap_handle_ = nullptr;
+                        pcap_freealldevs(devices);
+                    } else {
+                        std::cout << "✅ [SOCKET] WinPcap filter configured successfully" << std::endl;
+                        pcap_freecode(&fp);
+                        pcap_freealldevs(devices);
+
+                        // Get interface MAC address
+                        std::cout << "🏷️  [SOCKET] Retrieving MAC address..." << std::endl;
+                        if (!get_interface_mac_address()) {
+                            std::cout << "⚠️  [SOCKET] MAC address detection failed" << std::endl;
+                            std::cout << "   Continuing with UDP fallback..." << std::endl;
+                            pcap_close(pcap_handle_);
+                            pcap_handle_ = nullptr;
+                        } else {
+                            // Check for hardware timestamping support
+                            hardware_timestamping_available_ = check_hardware_timestamping();
+
+                            std::cout << "✅ [SOCKET] Windows gPTP socket initialized with WinPcap:" << std::endl;
+                            std::cout << "  Interface: " << interface_name_ << std::endl;
+                            std::cout << "  MAC: " << get_mac_string() << std::endl;
+                            std::cout << "  Hardware timestamping: " << (hardware_timestamping_available_ ? "Yes" : "No") << std::endl;
+                            
+                            initialized_ = true;
+                            return Result<bool>::success(true);
+                        }
+                    }
+                }
+            }
         }
     }
-
-    if (!device) {
-        pcap_freealldevs(devices);
-        WSACleanup();
-        return Result<bool>::error("Interface not found: " + interface_name);
+    catch (const std::exception& e) {
+        std::cout << "❌ [SOCKET] Exception during WinPcap initialization: " << e.what() << std::endl;
+        std::cout << "   Falling back to UDP multicast..." << std::endl;
+        if (devices) {
+            pcap_freealldevs(devices);
+        }
+        if (pcap_handle_) {
+            pcap_close(pcap_handle_);
+            pcap_handle_ = nullptr;
+        }
     }
-
-    // Open the device
-    pcap_handle_ = pcap_open_live(device->name, 65536, 1, 1000, errbuf);
-    if (!pcap_handle_) {
-        pcap_freealldevs(devices);
-        WSACleanup();
-        return Result<bool>::error("Error opening device: " + std::string(errbuf));
+    catch (...) {
+        std::cout << "❌ [SOCKET] Unknown exception during WinPcap initialization" << std::endl;
+        std::cout << "   Falling back to UDP multicast..." << std::endl;
+        if (devices) {
+            pcap_freealldevs(devices);
+        }
+        if (pcap_handle_) {
+            pcap_close(pcap_handle_);
+            pcap_handle_ = nullptr;
+        }
     }
+#endif
 
-    // Set filter for gPTP packets (EtherType 0x88F7)
-    struct bpf_program fp;
-    std::string filter_exp = "ether proto 0x88f7";
-    if (pcap_compile(pcap_handle_, &fp, filter_exp.c_str(), 0, PCAP_NETMASK_UNKNOWN) == -1) {
-        pcap_close(pcap_handle_);
-        pcap_freealldevs(devices);
-        WSACleanup();
-        return Result<bool>::error("Error compiling filter");
-    }
-
-    if (pcap_setfilter(pcap_handle_, &fp) == -1) {
-        pcap_freecode(&fp);
-        pcap_close(pcap_handle_);
-        pcap_freealldevs(devices);
-        WSACleanup();
-        return Result<bool>::error("Error setting filter");
-    }
-
-    pcap_freecode(&fp);
-    pcap_freealldevs(devices);
-
-    // Get interface MAC address
-    if (!get_interface_mac_address()) {
-        pcap_close(pcap_handle_);
-        WSACleanup();
-        return Result<bool>::error("Failed to get interface MAC address");
-    }
-
-    // Check for hardware timestamping support
-    hardware_timestamping_available_ = check_hardware_timestamping();
-
-    std::cout << "Windows gPTP socket initialized:" << std::endl;
-    std::cout << "  Interface: " << interface_name_ << std::endl;
-    std::cout << "  MAC: " << get_mac_string() << std::endl;
-    std::cout << "  Hardware timestamping: " << (hardware_timestamping_available_ ? "Yes" : "No") << std::endl;
-
-#else
-    // Fallback to UDP multicast if Npcap not available
-    std::cout << "⚠️ Npcap not available, using UDP fallback" << std::endl;
+    // If WinPcap is not available or failed, use UDP fallback
+    std::cout << "🔄 [SOCKET] Initializing UDP multicast fallback for gPTP..." << std::endl;
     
     // Create UDP socket for multicast
     udp_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -133,21 +185,13 @@ Result<bool> WindowsSocket::initialize(const std::string& interface_name) {
         return Result<bool>::error("Failed to create UDP socket");
     }
 
-    // Set up multicast address (using 224.0.1.129 for gPTP)
-    sockaddr_in multicast_addr{};
-    multicast_addr.sin_family = AF_INET;
-    multicast_addr.sin_port = htons(319); // gPTP event port
-    inet_pton(AF_INET, "224.0.1.129", &multicast_addr.sin_addr);
-
-    // Bind to multicast address
-    if (bind(udp_socket_, (sockaddr*)&multicast_addr, sizeof(multicast_addr)) == SOCKET_ERROR) {
-        closesocket(udp_socket_);
-        WSACleanup();
-        return Result<bool>::error("Failed to bind UDP socket");
+    // Enable broadcast/multicast
+    BOOL bOptVal = TRUE;
+    if (setsockopt(udp_socket_, SOL_SOCKET, SO_BROADCAST, (char*)&bOptVal, sizeof(bOptVal)) == SOCKET_ERROR) {
+        std::cout << "⚠️  Broadcast enable failed: " << WSAGetLastError() << std::endl;
     }
 
-    std::cout << "UDP multicast socket initialized (fallback mode)" << std::endl;
-#endif
+    std::cout << "✅ UDP multicast socket initialized (fallback mode)" << std::endl;
 
     initialized_ = true;
     return Result<bool>::success(true);
@@ -158,17 +202,17 @@ void WindowsSocket::cleanup() {
 
     stop_async_receive();
 
-#ifdef HAVE_NPCAP
+#ifdef HAVE_WPCAP
     if (pcap_handle_) {
         pcap_close(pcap_handle_);
         pcap_handle_ = nullptr;
     }
-#else
+#endif
+
     if (udp_socket_ != INVALID_SOCKET) {
         closesocket(udp_socket_);
         udp_socket_ = INVALID_SOCKET;
     }
-#endif
 
     WSACleanup();
     initialized_ = false;
@@ -184,25 +228,29 @@ Result<bool> WindowsSocket::send_packet(const GptpPacket& packet, PacketTimestam
     timestamp.hardware_timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch());
     timestamp.is_hardware_timestamp = hardware_timestamping_available_;
 
-#ifdef HAVE_NPCAP
-    // Send raw Ethernet frame
-    std::vector<uint8_t> frame_data;
-    frame_data.resize(sizeof(EthernetFrame) + packet.payload.size());
-    
-    // Copy Ethernet header
-    std::memcpy(frame_data.data(), &packet.ethernet, sizeof(EthernetFrame));
-    
-    // Copy payload
-    if (!packet.payload.empty()) {
-        std::memcpy(frame_data.data() + sizeof(EthernetFrame), 
-                   packet.payload.data(), packet.payload.size());
-    }
+#ifdef HAVE_WPCAP
+    if (pcap_handle_) {
+        // Send raw Ethernet frame via WinPcap
+        std::vector<uint8_t> frame_data;
+        frame_data.resize(sizeof(EthernetFrame) + packet.payload.size());
+        
+        // Copy Ethernet header
+        std::memcpy(frame_data.data(), &packet.ethernet, sizeof(EthernetFrame));
+        
+        // Copy payload
+        if (!packet.payload.empty()) {
+            std::memcpy(frame_data.data() + sizeof(EthernetFrame), 
+                       packet.payload.data(), packet.payload.size());
+        }
 
-    if (pcap_sendpacket(pcap_handle_, frame_data.data(), static_cast<int>(frame_data.size())) != 0) {
-        return Result<bool>::error("Failed to send packet: " + std::string(pcap_geterr(pcap_handle_)));
+        if (pcap_sendpacket(pcap_handle_, frame_data.data(), static_cast<int>(frame_data.size())) != 0) {
+            return Result<bool>::error("Failed to send packet: " + std::string(pcap_geterr(pcap_handle_)));
+        }
+        return Result<bool>::success(true);
     }
-#else
-    // Send via UDP (fallback)
+#endif
+
+    // Send via UDP (fallback) - always available
     sockaddr_in dest_addr{};
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(319);
@@ -213,7 +261,6 @@ Result<bool> WindowsSocket::send_packet(const GptpPacket& packet, PacketTimestam
                (sockaddr*)&dest_addr, sizeof(dest_addr)) == SOCKET_ERROR) {
         return Result<bool>::error("Failed to send UDP packet");
     }
-#endif
 
     return Result<bool>::success(true);
 }
@@ -223,7 +270,7 @@ Result<ReceivedPacket> WindowsSocket::receive_packet(uint32_t timeout_ms) {
         return Result<ReceivedPacket>::error("Socket not initialized");
     }
 
-#ifdef HAVE_NPCAP
+#ifdef HAVE_WPCAP
     struct pcap_pkthdr* header;
     const u_char* pkt_data;
     

@@ -14,6 +14,9 @@
 #endif
 
 #include <iostream>
+#include <thread>
+#include <atomic>
+#include <chrono>
 
 namespace gptp {
 
@@ -23,16 +26,63 @@ std::unique_ptr<IGptpSocket> GptpSocketManager::create_socket(const std::string&
         return nullptr;
     }
 
-    std::cout << "Creating gPTP socket for interface: " << interface_name << std::endl;
+    std::cout << "🔄 [MANAGER] Creating gPTP socket for interface: " << interface_name << std::endl;
 
 #ifdef _WIN32
     auto socket = std::make_unique<WindowsSocket>();
-    auto result = socket->initialize(interface_name);
-    if (result.is_success()) {
-        std::cout << "✅ Windows gPTP socket created successfully" << std::endl;
+    
+    // Use timeout wrapper to prevent hanging during socket initialization
+    std::cout << "⏱️  [MANAGER] Starting socket initialization with 10-second timeout..." << std::endl;
+    
+    std::atomic<bool> initialization_complete{false};
+    std::atomic<bool> initialization_success{false};
+    Result<bool> result = Result<bool>::success(false); // Initialize with default
+    
+    std::thread init_thread([&]() {
+        try {
+            result = socket->initialize(interface_name);
+            initialization_success = result.is_success();
+            initialization_complete = true;
+            std::cout << "✅ [MANAGER] Socket initialization thread completed" << std::endl;
+        }
+        catch (const std::exception& e) {
+            std::cout << "❌ [MANAGER] Exception in initialization thread: " << e.what() << std::endl;
+            initialization_success = false;
+            initialization_complete = true;
+        }
+        catch (...) {
+            std::cout << "❌ [MANAGER] Unknown exception in initialization thread" << std::endl;
+            initialization_success = false;
+            initialization_complete = true;
+        }
+    });
+    
+    // Wait for completion with timeout
+    auto start_time = std::chrono::steady_clock::now();
+    const auto timeout_duration = std::chrono::seconds(10);
+    
+    while (!initialization_complete) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        
+        auto elapsed = std::chrono::steady_clock::now() - start_time;
+        if (elapsed > timeout_duration) {
+            std::cout << "⏰ [MANAGER] Socket initialization timeout after 10 seconds" << std::endl;
+            std::cout << "   ⚠️  Terminating problematic initialization and continuing..." << std::endl;
+            
+            // Note: In production, we should properly terminate the thread
+            // For now, we'll detach it to prevent resource issues
+            init_thread.detach();
+            return nullptr;
+        }
+    }
+    
+    init_thread.join();
+    
+    if (initialization_success) {
+        std::cout << "✅ [MANAGER] Windows gPTP socket created successfully" << std::endl;
         return std::move(socket);
     } else {
-        std::cerr << "❌ Failed to initialize Windows socket: " << static_cast<int>(result.error()) << std::endl;
+        std::cerr << "❌ [MANAGER] Failed to initialize Windows socket: " << static_cast<int>(result.error()) << std::endl;
         return nullptr;
     }
 #elif defined(__linux__)

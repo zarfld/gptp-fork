@@ -9,6 +9,7 @@
 #include "../../include/bmca.hpp"
 #include <cstring>
 #include <cmath>
+#include <iostream>  // für std::cout Debug-Ausgaben
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -296,9 +297,21 @@ std::vector<BmcaDecision> BmcaCoordinator::run_bmca(const PriorityVector& local_
         }
     }
     
+    std::cout << "👑 [BMCA] Running Best Master Clock Algorithm" << std::endl;
+    std::cout << "   Local clock priority vector:" << std::endl;
+    std::cout << "     Priority1: " << static_cast<int>(local_priority.grandmaster_priority1) << std::endl;
+    std::cout << "     Clock Class: " << static_cast<int>(local_priority.grandmaster_clock_quality.clockClass) << std::endl;
+    std::cout << "     Priority2: " << static_cast<int>(local_priority.grandmaster_priority2) << std::endl;
+    std::cout << "   Active master candidates: " << all_masters.size() << std::endl;
+    
     // Determine if we should be grandmaster
     bool should_be_gm = engine_.should_be_grandmaster(local_priority, all_masters);
     bool role_changed = (should_be_gm != local_is_grandmaster_);
+    
+    std::cout << "   BMCA Decision: " << (should_be_gm ? "GRANDMASTER" : "SLAVE") << std::endl;
+    if (role_changed) {
+        std::cout << "   ⚡ ROLE CHANGE DETECTED!" << std::endl;
+    }
     
     local_is_grandmaster_ = should_be_gm;
     

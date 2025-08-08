@@ -10,6 +10,7 @@
 #include <fstream>
 #include <numeric>
 #include <vector>
+#include <iomanip>  // für setprecision, setfill, setw
 
 namespace gptp {
 namespace path_delay {
@@ -35,6 +36,7 @@ PathDelayResult StandardP2PDelayCalculator::calculate_path_delay(const PdelayTim
     PathDelayResult result;
     
     if (!is_measurement_valid(timestamps)) {
+        std::cout << "🚫 [PDELAY] Invalid path delay measurement timestamps" << std::endl;
         return result;  // Invalid measurement
     }
     
@@ -43,6 +45,18 @@ PathDelayResult StandardP2PDelayCalculator::calculate_path_delay(const PdelayTim
     result.neighbor_rate_ratio = current_neighbor_rate_ratio_;
     result.valid = true;
     result.measurement_time = std::chrono::steady_clock::now();
+    
+    // Debug output für Path Delay Calculation
+    std::cout << "📏 [PDELAY] Path delay calculated: " << result.mean_link_delay.count() << " ns" << std::endl;
+    std::cout << "   Neighbor rate ratio: " << std::fixed << std::setprecision(9) << result.neighbor_rate_ratio << std::endl;
+    std::cout << "   T1 (req send): " << timestamps.t1.get_seconds() << "." 
+              << std::setfill('0') << std::setw(9) << timestamps.t1.nanoseconds << "s" << std::endl;
+    std::cout << "   T2 (req recv): " << timestamps.t2.get_seconds() << "." 
+              << std::setfill('0') << std::setw(9) << timestamps.t2.nanoseconds << "s" << std::endl;
+    std::cout << "   T3 (resp send): " << timestamps.t3.get_seconds() << "." 
+              << std::setfill('0') << std::setw(9) << timestamps.t3.nanoseconds << "s" << std::endl;
+    std::cout << "   T4 (resp recv): " << timestamps.t4.get_seconds() << "." 
+              << std::setfill('0') << std::setw(9) << timestamps.t4.nanoseconds << "s" << std::endl;
     
     // Calculate confidence based on measurement consistency
     if (timestamp_history_.size() >= 3) {

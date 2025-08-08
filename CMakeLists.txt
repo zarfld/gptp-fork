@@ -98,31 +98,28 @@ if(WIN32)
   add_definitions(-DNOMINMAX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
   
-  set(NPCAP_DIR $ENV{NPCAP_DIR})
-  if(NPCAP_DIR AND EXISTS "${NPCAP_DIR}/Include" AND EXISTS "${NPCAP_DIR}/Lib")
-    include_directories(${NPCAP_DIR}/Include)
+  # WinPcap configuration for Windows - WPCAP_DIR with Lib/x64/ and Include/ subdirectories
+  set(WPCAP_DIR $ENV{WPCAP_DIR})
+  if(WPCAP_DIR AND EXISTS "${WPCAP_DIR}/Include" AND EXISTS "${WPCAP_DIR}/Lib")
+    include_directories(${WPCAP_DIR}/Include)
     
-    # Use x64 libraries for 64-bit build
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-      set(NPCAP_LIB_DIR "${NPCAP_DIR}/Lib/x64")
+    # WinPcap has x64 libraries in Lib/x64/ subdirectory
+    set(WPCAP_LIB_DIR "${WPCAP_DIR}/Lib/x64")
+    link_directories(${WPCAP_LIB_DIR})
+    
+    # Check if the actual WinPcap x64 library files exist (wpcap.lib and Packet.lib)
+    if(EXISTS "${WPCAP_LIB_DIR}/wpcap.lib" AND EXISTS "${WPCAP_LIB_DIR}/Packet.lib")
+      set(WPCAP_LIBS wpcap Packet)
+      message(STATUS "Using WPCAP directory: ${WPCAP_DIR}")
+      message(STATUS "Using WPCAP x64 libraries: wpcap, Packet from ${WPCAP_LIB_DIR}")
+      add_definitions(-DHAVE_WPCAP)
     else()
-      set(NPCAP_LIB_DIR "${NPCAP_DIR}/Lib/x86")
-    endif()
-    
-    link_directories(${NPCAP_LIB_DIR})
-    
-    # Check if the actual library files exist (wpcap.lib instead of npcap.lib)
-    if(EXISTS "${NPCAP_LIB_DIR}/wpcap.lib" AND EXISTS "${NPCAP_LIB_DIR}/Packet.lib")
-      set(NPCAP_LIBS wpcap Packet)
-      message(STATUS "Using NPCAP directory: ${NPCAP_DIR}")
-      message(STATUS "Using NPCAP libraries: wpcap, Packet from ${NPCAP_LIB_DIR}")
-    else()
-      set(NPCAP_LIBS)
-      message(WARNING "NPCAP library files not found in ${NPCAP_LIB_DIR}. Building without NPCAP support.")
+      set(WPCAP_LIBS)
+      message(WARNING "WPCAP x64 library files (wpcap.lib, Packet.lib) not found in ${WPCAP_LIB_DIR}. Building without WinPcap support.")
     endif()
   else()
-    set(NPCAP_LIBS)
-    message(WARNING "NPCAP_DIR not set or directory not found. Building without NPCAP support.")
+    set(WPCAP_LIBS)
+    message(WARNING "WPCAP_DIR not set or directory not found. Building without WinPcap support.")
   endif()
 
   add_executable(gptp ${COMMON_SOURCES})
@@ -152,7 +149,7 @@ if(WIN32)
   target_link_libraries(gptp 
     Iphlpapi 
     ws2_32
-    ${NPCAP_LIBS}
+    ${WPCAP_LIBS}
   )
   
   # Set Windows-specific properties
@@ -307,5 +304,9 @@ if(WIN32)
 
 # Add tests subdirectory with unique binary directory
 add_subdirectory(tests ${CMAKE_BINARY_DIR}/test_build)
+
+# Add simple socket test executable
+add_executable(simple_socket_test src/simple_socket_test.cpp)
+target_link_libraries(simple_socket_test ws2_32)
   set(CMAKE_VS_INCLUDE_BUILD_TO_DEFAULT_BUILD 1)
  endif()

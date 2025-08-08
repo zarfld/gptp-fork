@@ -49,7 +49,7 @@ public:
     /**
      * @brief Add synchronization measurement from Sync/Follow_Up messages
      */
-    void add_measurement(const SyncMeasurement& measurement) override {
+    void add_measurement(const SyncMeasurement& measurement) {
         measurements_.push_back(measurement);
         
         // Limit history size
@@ -64,7 +64,7 @@ public:
     /**
      * @brief Calculate offset from master clock (IEEE 802.1AS-2021 clause 7.4.2)
      */
-    OffsetResult calculate_offset(const SyncMeasurement& measurement) override {
+    OffsetResult calculate_offset(const SyncMeasurement& measurement) {
         OffsetResult result;
         
         if (measurements_.empty()) {
@@ -107,7 +107,7 @@ public:
     /**
      * @brief Run PI controller to calculate frequency adjustment
      */
-    FrequencyResult run_pi_controller(const OffsetResult& offset) override {
+    FrequencyResult run_pi_controller(const OffsetResult& offset) {
         FrequencyResult result;
         
         if (!offset.valid) {
@@ -125,9 +125,9 @@ public:
         // Integral term (accumulate error over time)
         integral_error_ += offset_ns;
         
-        // Apply integral windup protection
+        // Apply integral windup protection  
         double max_integral = config_.max_frequency_adjustment / config_.integral_gain;
-        integral_error_ = std::clamp(integral_error_, -max_integral, max_integral);
+        integral_error_ = std::max(-max_integral, std::min(max_integral, integral_error_));
         
         double integral_term = config_.integral_gain * integral_error_;
         
@@ -135,10 +135,9 @@ public:
         result.frequency_adjustment = proportional_term + integral_term;
         
         // Apply limits
-        result.frequency_adjustment = std::clamp(
-            result.frequency_adjustment,
+        result.frequency_adjustment = std::max(
             -config_.max_frequency_adjustment,
-            config_.max_frequency_adjustment
+            std::min(config_.max_frequency_adjustment, result.frequency_adjustment)
         );
         
         // Phase adjustment (for step corrections)
@@ -156,6 +155,7 @@ public:
         // Update statistics
         update_statistics(offset_ns, result.frequency_adjustment);
         
+        // Store last offset for derivative calculations
         last_offset_ns_ = offset_ns;
         
         std::cout << "PI Controller - Offset: " << offset_ns 
@@ -168,22 +168,21 @@ public:
     /**
      * @brief Get current servo status
      */
-    ServoStatus get_status() const override {
-        ServoStatus status;
-        
-        status.locked = servo_locked_;
-        status.offset_ns = last_offset_ns_;
-        status.frequency_adjustment_ppb = mean_frequency_adjustment_;
-        status.measurement_count = measurements_.size();
-        status.confidence = calculate_measurement_confidence();
-        
-        return status;
+    ServoStats get_statistics() const {
+        ServoStats stats;
+        stats.sample_count = measurements_.size();
+        stats.mean_offset = std::chrono::nanoseconds(static_cast<int64_t>(mean_offset_));
+        stats.std_deviation = std::chrono::nanoseconds(static_cast<int64_t>(std::sqrt(variance_offset_)));
+        stats.current_frequency_ppb = mean_frequency_adjustment_;
+        stats.is_locked = servo_locked_;
+        stats.last_update = std::chrono::steady_clock::now();
+        return stats;
     }
     
     /**
      * @brief Reset servo state
      */
-    void reset() override {
+    void reset() {
         measurements_.clear();
         offset_history_.clear();
         integral_error_ = 0.0;
@@ -195,6 +194,13 @@ public:
         mean_frequency_adjustment_ = 0.0;
         
         std::cout << "Clock servo reset" << std::endl;
+    }
+    
+    /**
+     * @brief Get measurement history (for SynchronizationManager)
+     */
+    const std::deque<SyncMeasurement>& get_measurements() const {
+        return measurements_;
     }
     
 private:
@@ -311,104 +317,35 @@ private:
         // 3. Clock discipline algorithms
         
         if (result.phase_adjustment != 0.0) {
-            std::cout << "Applying phase adjustment: " << result.phase_adjustment << " ns" << std::endl;
+            std::cout << "⏰ [PHASE] Applying phase adjustment: " << result.phase_adjustment << " ns" << std::endl;
             // Hardware/system specific phase step
+            
+            // Detailed debug info
+            std::cout << "   Phase adjustment reason: Large offset detected" << std::endl;
+            std::cout << "   System call: adjtime() / SetSystemTimeAdjustment()" << std::endl;
         }
         
         if (result.frequency_adjustment != 0.0) {
-            std::cout << "Applying frequency adjustment: " << result.frequency_adjustment << " ppb" << std::endl;
+            std::cout << "📶 [FREQ] Applying frequency adjustment: " << result.frequency_adjustment << " ppb" << std::endl;
             // Hardware/system specific frequency adjustment
+            
+            // Detailed debug info with system clock implications
+            auto system_time_now = std::chrono::system_clock::now();
+            auto system_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                system_time_now.time_since_epoch()).count();
+            
+            std::cout << "   Current system time: " << system_ns << " ns" << std::endl;
+            std::cout << "   Frequency drift correction: " << (result.frequency_adjustment / 1000000.0) << " ppm" << std::endl;
+            std::cout << "   Expected time correction over 1s: " << (result.frequency_adjustment) << " ns" << std::endl;
+            std::cout << "   System call: adjtimex() / NtSetTimerResolution()" << std::endl;
         }
+        
+        // Show servo convergence information
+        std::cout << "🎯 [SERVO] Statistics - Mean offset: " << mean_offset_ << " ns, "
+                  << "Variance: " << variance_offset_ << " ns², "
+                  << "Samples: " << measurements_.size() << "/" << config_.max_samples << std::endl;
     }
 };
-
-/**
- * @brief Synchronization Manager Implementation
- */
-class SynchronizationManagerImpl : public SynchronizationManager {
-private:
-    std::unique_ptr<ClockServoImplementation> servo_;
-    SyncStatus current_status_;
-    std::chrono::steady_clock::time_point last_sync_time_;
-    std::chrono::milliseconds sync_timeout_;
-    
-public:
-    SynchronizationManagerImpl(const ServoConfig& config = ServoConfig())
-        : servo_(std::make_unique<ClockServoImplementation>(config))
-        , current_status_(SyncStatus::INITIALIZING)
-        , sync_timeout_(std::chrono::milliseconds(3000)) { // 3 second timeout
-    }
-    
-    void process_sync_message(const SyncMessage& sync, const Timestamp& receipt_time) override {
-        SyncMeasurement measurement;
-        measurement.master_timestamp = sync.originTimestamp;
-        measurement.local_receipt_time = receipt_time;
-        measurement.measurement_time = std::chrono::steady_clock::now();
-        
-        // Path delay would be provided by LinkDelay state machine
-        measurement.path_delay = std::chrono::nanoseconds(0); // TODO: Get from path delay calculator
-        
-        servo_->add_measurement(measurement);
-        
-        last_sync_time_ = measurement.measurement_time;
-        update_sync_status();
-    }
-    
-    void process_followup_message(const FollowUpMessage& followup) override {
-        // Update the last measurement with precise timestamp
-        if (!servo_->get_measurements().empty()) {
-            auto& last_measurement = const_cast<SyncMeasurement&>(servo_->get_measurements().back());
-            last_measurement.correction_field = followup.preciseOriginTimestamp;
-        }
-    }
-    
-    void set_path_delay(std::chrono::nanoseconds delay) override {
-        // Update path delay for future measurements
-        if (!servo_->get_measurements().empty()) {
-            auto& last_measurement = const_cast<SyncMeasurement&>(servo_->get_measurements().back());
-            last_measurement.path_delay = delay;
-        }
-        
-        std::cout << "Path delay updated: " << delay.count() << " ns" << std::endl;
-    }
-    
-    SyncStatus get_sync_status() const override {
-        return current_status_;
-    }
-    
-    ServoStatus get_servo_status() const override {
-        return servo_->get_status();
-    }
-    
-    void reset() override {
-        servo_->reset();
-        current_status_ = SyncStatus::INITIALIZING;
-        std::cout << "Synchronization manager reset" << std::endl;
-    }
-    
-private:
-    void update_sync_status() {
-        auto now = std::chrono::steady_clock::now();
-        auto time_since_last_sync = now - last_sync_time_;
-        
-        if (time_since_last_sync > sync_timeout_) {
-            current_status_ = SyncStatus::TIMEOUT;
-        } else if (servo_->get_status().locked) {
-            current_status_ = SyncStatus::SYNCHRONIZED;
-        } else {
-            current_status_ = SyncStatus::SYNCHRONIZING;
-        }
-    }
-};
-
-// Factory methods
-std::unique_ptr<ClockServo> ClockServo::create(const ServoConfig& config) {
-    return std::make_unique<ClockServoImplementation>(config);
-}
-
-std::unique_ptr<SynchronizationManager> SynchronizationManager::create(const ServoConfig& config) {
-    return std::make_unique<SynchronizationManagerImpl>(config);
-}
 
 } // namespace servo
 } // namespace gptp

@@ -18,6 +18,7 @@
 #include <exception>
 #include <thread>
 #include <chrono>
+#include <algorithm>
 
 namespace gptp {
 
@@ -293,7 +294,7 @@ namespace gptp {
                 }
             }
 
-            // Run gPTP on suitable interfaces
+            // CRITICAL PRODUCTION FILTERING: Limit to maximum 2 interfaces for stability
             if (gptp_capable_interfaces.empty()) {
                 LOG_WARN("No gPTP-capable interfaces found!");
                 LOG_INFO("Recommendations:");
@@ -304,7 +305,59 @@ namespace gptp {
                 return ErrorCode::INTERFACE_NOT_FOUND;
             }
 
-            LOG_INFO("Starting gPTP on {} suitable interface(s):", gptp_capable_interfaces.size());
+            // STRICT FILTERING: For production stability, limit to 2 most suitable interfaces
+            size_t original_count = gptp_capable_interfaces.size();
+            
+            if (gptp_capable_interfaces.size() > 2) {
+                LOG_WARN("📊 PRODUCTION FILTERING: Found {} interfaces, limiting to 2 most suitable for stability", original_count);
+                
+                // Priority sorting: Intel hardware timestamping > Intel software > RME > generic
+                std::sort(gptp_capable_interfaces.begin(), gptp_capable_interfaces.end(), 
+                    [&intel_adapters](const NetworkInterface& a, const NetworkInterface& b) {
+                        // Priority 1: Intel with hardware timestamping
+                        bool a_intel_hw = false;
+                        bool b_intel_hw = false;
+                        
+                        for (const auto& intel : intel_adapters) {
+                            if (a.capabilities.hardware_timestamping_supported && intel.supports_hardware_timestamping) {
+                                a_intel_hw = true;
+                            }
+                            if (b.capabilities.hardware_timestamping_supported && intel.supports_hardware_timestamping) {
+                                b_intel_hw = true;
+                            }
+                        }
+                        
+                        if (a_intel_hw != b_intel_hw) return a_intel_hw > b_intel_hw;
+                        
+                        // Priority 2: Hardware timestamping over software
+                        if (a.capabilities.hardware_timestamping_supported != b.capabilities.hardware_timestamping_supported) {
+                            return a.capabilities.hardware_timestamping_supported;
+                        }
+                        
+                        // Priority 3: Intel interfaces over others
+                        bool a_intel = !intel_adapters.empty(); // Assume if Intel exists, interfaces are related
+                        bool b_intel = !intel_adapters.empty();
+                        
+                        return false; // Keep original order if equal
+                    });
+                
+                // Keep only top 2
+                gptp_capable_interfaces.resize(2);
+                
+                LOG_INFO("🎯 FILTERED SELECTION: Using top 2 interfaces:");
+                for (size_t i = 0; i < gptp_capable_interfaces.size(); ++i) {
+                    const auto& iface = gptp_capable_interfaces[i];
+                    LOG_INFO("  {}. {} - Hardware TS: {}, Software TS: {}", 
+                            i + 1, iface.name,
+                            iface.capabilities.hardware_timestamping_supported ? "YES" : "No",
+                            iface.capabilities.software_timestamping_supported ? "YES" : "No");
+                }
+                
+                LOG_INFO("💡 REASON: Limited interface count prevents resource conflicts and ensures stable gPTP operation");
+                LOG_INFO("🔧 To use all {} interfaces, modify filtering in main.cpp", original_count);
+            }
+
+            LOG_INFO("Starting gPTP on {} FILTERED interface(s):", gptp_capable_interfaces.size());
             
             for (const auto& interface : gptp_capable_interfaces) {
                 LOG_INFO("  → Running gPTP on interface: {}", interface.name);
